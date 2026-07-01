@@ -22,8 +22,8 @@ final class TextListEditorViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .cancel, target: self, action: #selector(cancel))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .save, target: self, action: #selector(save))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancel))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(save))
 
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.font = UIFont.preferredFont(forTextStyle: .body)
@@ -60,7 +60,7 @@ final class TextListEditorViewController: UIViewController {
     }
 
     @objc private func save() {
-        onSave(textView.text ?? "")
+        onSave(textView.text)
         dismiss(animated: true)
     }
 }
