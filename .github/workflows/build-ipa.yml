@@ -1,0 +1,47 @@
+﻿name: Build IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: "Bundle ID override"
+        required: true
+        default: "com.example.NativeSiteApp"
+      configuration:
+        description: "Build configuration"
+        required: true
+        default: "Release"
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    name: Build unsigned iPhoneOS IPA
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build IPA
+        env:
+          BUNDLE_ID: ${{ inputs.bundle_id }}
+          CONFIGURATION: ${{ inputs.configuration }}
+        run: |
+          chmod +x scripts/build_ipa.sh
+          ./scripts/build_ipa.sh
+
+      - name: Upload IPA and logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: NativeSiteApp-ipa-and-logs
+          path: |
+            build/ipa/*.ipa
+            build_logs/*.log
+            build_logs/last_build_summary.txt
+          if-no-files-found: warn
