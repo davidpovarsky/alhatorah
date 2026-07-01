@@ -32,3 +32,11 @@ enum AlertFactory {
         return alert
     }
 }
+
+extension AlertFactory {
+    static func showMessage(_ title: String, message: String? = nil, in viewController: UIViewController) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        viewController.present(alert, animated: true)
+    }
+}

@@ -131,13 +131,13 @@ final class SettingsViewController: UITableViewController {
         switch row {
         case .externalLinks:
             cell.textLabel?.text = "External links in Safari view"
-            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.opensExternalLinksInSafariView, action: #selector(toggleExternalLinks(_:)))
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.openExternalLinksInSafariView, action: #selector(toggleExternalLinks(_:)))
         case .toolbarAutoHide:
             cell.textLabel?.text = "Hide toolbar on scroll"
-            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.toolbarAutoHideEnabled, action: #selector(toggleToolbarAutoHide(_:)))
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.hideToolbarOnScroll, action: #selector(toggleToolbarAutoHide(_:)))
         case .desktopMode:
             cell.textLabel?.text = "Desktop site mode"
-            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.preferDesktopMode, action: #selector(toggleDesktopMode(_:)))
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.preferDesktopUserAgent, action: #selector(toggleDesktopMode(_:)))
         case .none:
             break
         }
@@ -247,15 +247,15 @@ final class SettingsViewController: UITableViewController {
     }
 
     @objc private func toggleExternalLinks(_ sender: UISwitch) {
-        settingsStore.update { $0.opensExternalLinksInSafariView = sender.isOn }
+        settingsStore.update { $0.openExternalLinksInSafariView = sender.isOn }
     }
 
     @objc private func toggleToolbarAutoHide(_ sender: UISwitch) {
-        settingsStore.update { $0.toolbarAutoHideEnabled = sender.isOn }
+        settingsStore.update { $0.hideToolbarOnScroll = sender.isOn }
     }
 
     @objc private func toggleDesktopMode(_ sender: UISwitch) {
-        settingsStore.update { $0.preferDesktopMode = sender.isOn }
+        settingsStore.update { $0.preferDesktopUserAgent = sender.isOn }
     }
 
     @objc private func done() {

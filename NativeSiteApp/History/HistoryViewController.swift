@@ -70,7 +70,7 @@ final class HistoryViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let item = visibleItems[indexPath.row]
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
-            self?.historyStore.delete(id: item.id)
+            self?.historyStore.remove(id: item.id)
             completion(true)
         }
         return UISwipeActionsConfiguration(actions: [delete])

@@ -80,8 +80,10 @@ final class TabsViewController: UITableViewController {
     }
 
     @objc private func closeAll() {
-        tabStore.reset(to: settings.homeURL)
-        delegate?.tabsViewControllerDidRequestNewTab(self)
+        tabStore.closeAllAndCreateHome(url: settings.homeURL)
+        if let tab = tabStore.currentTab {
+            delegate?.tabsViewController(self, didSelect: tab)
+        }
     }
 }
 
