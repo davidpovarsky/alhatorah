@@ -48,7 +48,7 @@ final class SettingsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Settings"
-        navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .done, target: self, action: #selector(done))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -91,231 +91,171 @@ final class SettingsViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+        cell.accessoryType = .disclosureIndicator
+
         switch Section(rawValue: indexPath.section) {
         case .website:
-            return websiteCell(for: indexPath)
+            configureWebsite(cell, row: WebsiteRow(rawValue: indexPath.row))
         case .behavior:
-            return behaviorCell(for: indexPath)
+            configureBehavior(cell, row: BehaviorRow(rawValue: indexPath.row))
         case .data:
-            return dataCell(for: indexPath)
+            configureData(cell, row: DataRow(rawValue: indexPath.row))
         case .links:
-            return linksCell(for: indexPath)
+            configureLinks(cell, row: LinksRow(rawValue: indexPath.row))
         case .about:
-            var content = UIListContentConfiguration.valueCell()
-            content.text = "Native Site App"
-            content.secondaryText = "UIKit + WKWebView"
-            let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
-            cell.contentConfiguration = content
-            cell.selectionStyle = .none
-            return cell
+            cell.textLabel?.text = "NativeSiteApp"
+            cell.detailTextLabel?.text = "UIKit WebView wrapper for alhatorah.org"
+            cell.accessoryType = .none
         case .none:
-            return UITableViewCell()
+            break
+        }
+        return cell
+    }
+
+    private func configureWebsite(_ cell: UITableViewCell, row: WebsiteRow?) {
+        switch row {
+        case .homeURL:
+            cell.textLabel?.text = "Home URL"
+            cell.detailTextLabel?.text = settingsStore.settings.homeURLString
+        case .allowedDomains:
+            cell.textLabel?.text = "Allowed Domains"
+            cell.detailTextLabel?.text = settingsStore.settings.allowedDomains.joined(separator: ", ")
+        case .none:
+            break
+        }
+    }
+
+    private func configureBehavior(_ cell: UITableViewCell, row: BehaviorRow?) {
+        cell.accessoryType = .none
+        switch row {
+        case .externalLinks:
+            cell.textLabel?.text = "External links in Safari view"
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.opensExternalLinksInSafariView, action: #selector(toggleExternalLinks(_:)))
+        case .toolbarAutoHide:
+            cell.textLabel?.text = "Hide toolbar on scroll"
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.toolbarAutoHideEnabled, action: #selector(toggleToolbarAutoHide(_:)))
+        case .desktopMode:
+            cell.textLabel?.text = "Desktop site mode"
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.preferDesktopMode, action: #selector(toggleDesktopMode(_:)))
+        case .none:
+            break
+        }
+    }
+
+    private func configureData(_ cell: UITableViewCell, row: DataRow?) {
+        switch row {
+        case .clearHistory:
+            cell.textLabel?.text = "Clear History"
+        case .clearWebsiteData:
+            cell.textLabel?.text = "Clear Website Data"
+        case .resetSettings:
+            cell.textLabel?.text = "Reset Settings"
+        case .none:
+            break
+        }
+    }
+
+    private func configureLinks(_ cell: UITableViewCell, row: LinksRow?) {
+        switch row {
+        case .customSchemeExample:
+            cell.textLabel?.text = "Custom URL Scheme"
+            cell.detailTextLabel?.text = "nativeweb://open?url=https://alhatorah.org/"
+        case .universalLinksNote:
+            cell.textLabel?.text = "Universal Links"
+            cell.detailTextLabel?.text = "Requires Associated Domains on the website."
+        case .none:
+            break
         }
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-
         switch Section(rawValue: indexPath.section) {
         case .website:
-            handleWebsiteSelection(indexPath)
+            handleWebsite(row: WebsiteRow(rawValue: indexPath.row))
         case .data:
-            handleDataSelection(indexPath)
+            handleData(row: DataRow(rawValue: indexPath.row))
         case .links:
-            handleLinksSelection(indexPath)
+            handleLinks(row: LinksRow(rawValue: indexPath.row))
         default:
             break
         }
     }
 
-    private func websiteCell(for indexPath: IndexPath) -> UITableViewCell {
-        let row = WebsiteRow(rawValue: indexPath.row)
-        let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
-        var content = UIListContentConfiguration.valueCell()
-        cell.accessoryType = .disclosureIndicator
-
+    private func handleWebsite(row: WebsiteRow?) {
         switch row {
         case .homeURL:
-            content.text = "Home Page"
-            content.secondaryText = settingsStore.settings.homeURLString
-        case .allowedDomains:
-            content.text = "Allowed Domains"
-            content.secondaryText = "\(settingsStore.settings.allowedDomains.count)"
-        case .none:
-            break
-        }
-        cell.contentConfiguration = content
-        return cell
-    }
-
-    private func behaviorCell(for indexPath: IndexPath) -> UITableViewCell {
-        let row = BehaviorRow(rawValue: indexPath.row)
-        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-        var content = UIListContentConfiguration.cell()
-        let toggle = UISwitch()
-
-        switch row {
-        case .externalLinks:
-            content.text = "External Links in Safari View"
-            toggle.isOn = settingsStore.settings.openExternalLinksInSafariView
-            toggle.addTarget(self, action: #selector(externalLinksChanged(_:)), for: .valueChanged)
-        case .toolbarAutoHide:
-            content.text = "Hide Toolbar on Scroll"
-            toggle.isOn = settingsStore.settings.hideToolbarOnScroll
-            toggle.addTarget(self, action: #selector(toolbarAutoHideChanged(_:)), for: .valueChanged)
-        case .desktopMode:
-            content.text = "Request Desktop Site"
-            toggle.isOn = settingsStore.settings.preferDesktopUserAgent
-            toggle.addTarget(self, action: #selector(desktopModeChanged(_:)), for: .valueChanged)
-        case .none:
-            break
-        }
-
-        cell.contentConfiguration = content
-        cell.accessoryView = toggle
-        cell.selectionStyle = .none
-        return cell
-    }
-
-    private func dataCell(for indexPath: IndexPath) -> UITableViewCell {
-        let row = DataRow(rawValue: indexPath.row)
-        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-        var content = UIListContentConfiguration.cell()
-
-        switch row {
-        case .clearHistory:
-            content.text = "Clear History"
-            content.textProperties.color = .systemRed
-        case .clearWebsiteData:
-            content.text = "Clear Website Data"
-            content.textProperties.color = .systemRed
-        case .resetSettings:
-            content.text = "Reset Settings"
-            content.textProperties.color = .systemRed
-        case .none:
-            break
-        }
-
-        cell.contentConfiguration = content
-        return cell
-    }
-
-    private func linksCell(for indexPath: IndexPath) -> UITableViewCell {
-        let row = LinksRow(rawValue: indexPath.row)
-        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-        var content = UIListContentConfiguration.subtitleCell()
-        cell.accessoryType = .disclosureIndicator
-
-        switch row {
-        case .customSchemeExample:
-            content.text = "Copy Custom URL Scheme Example"
-            content.secondaryText = DeepLinkParser.exampleURL(for: settingsStore.settings.homeURL)?.absoluteString
-        case .universalLinksNote:
-            content.text = "Universal Links Setup Note"
-            content.secondaryText = "Requires Associated Domains and apple-app-site-association on the website."
-        case .none:
-            break
-        }
-
-        content.secondaryTextProperties.numberOfLines = 2
-        cell.contentConfiguration = content
-        return cell
-    }
-
-    private func handleWebsiteSelection(_ indexPath: IndexPath) {
-        switch WebsiteRow(rawValue: indexPath.row) {
-        case .homeURL:
-            let alert = AlertFactory.textInput(
-                title: "Home Page",
-                message: "Enter the default URL loaded by the app.",
-                currentText: settingsStore.settings.homeURLString,
-                placeholder: "https://alhatorah.org/"
-            ) { [weak self] text in
-                guard let self, let url = URL(string: text), let scheme = url.scheme?.lowercased(), ["http", "https"].contains(scheme) else { return }
-                self.settingsStore.update { $0.homeURLString = url.absoluteString }
-                self.tableView.reloadData()
-            }
-            present(alert, animated: true)
-
-        case .allowedDomains:
-            let text = settingsStore.settings.allowedDomains.joined(separator: "\n")
-            let editor = TextListEditorViewController(
-                title: "Allowed Domains",
-                text: text,
-                helpText: "One domain or full URL per line. Use alhatorah.org to include all subdomains such as shas.alhatorah.org."
-            ) { [weak self] rawText in
-                let domains = DomainNormalizer.normalizeList(rawText)
-                self?.settingsStore.update { $0.allowedDomains = domains.isEmpty ? AppSettings.defaults.allowedDomains : domains }
+            editText(title: "Home URL", text: settingsStore.settings.homeURLString, help: "Example: https://alhatorah.org/") { [weak self] text in
+                self?.settingsStore.update { $0.homeURLString = text.trimmingCharacters(in: .whitespacesAndNewlines) }
                 self?.tableView.reloadData()
             }
-            let navigation = UINavigationController(rootViewController: editor)
-            present(navigation, animated: true)
-
-        case .none:
-            break
-        }
-    }
-
-    private func handleDataSelection(_ indexPath: IndexPath) {
-        switch DataRow(rawValue: indexPath.row) {
-        case .clearHistory:
-            let alert = AlertFactory.confirm(title: "Clear History?", message: nil, actionTitle: "Clear") { [weak self] in
-                self?.historyStore.clear()
-            }
-            present(alert, animated: true)
-
-        case .clearWebsiteData:
-            let alert = AlertFactory.confirm(title: "Clear Website Data?", message: "This clears cookies, cache, local storage and other WKWebView website data.", actionTitle: "Clear") {
-                let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-                WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {}
-            }
-            present(alert, animated: true)
-
-        case .resetSettings:
-            let alert = AlertFactory.confirm(title: "Reset Settings?", message: nil, actionTitle: "Reset") { [weak self] in
-                self?.settingsStore.reset()
+        case .allowedDomains:
+            editText(title: "Allowed Domains", text: settingsStore.settings.allowedDomains.joined(separator: "\n"), help: "One domain or URL per line. alhatorah.org includes shas.alhatorah.org.") { [weak self] text in
+                let domains = text.split(whereSeparator: { $0.isNewline }).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                self?.settingsStore.update { $0.allowedDomains = domains }
                 self?.tableView.reloadData()
             }
-            present(alert, animated: true)
-
         case .none:
             break
         }
     }
 
-    private func handleLinksSelection(_ indexPath: IndexPath) {
-        switch LinksRow(rawValue: indexPath.row) {
+    private func handleData(row: DataRow?) {
+        switch row {
+        case .clearHistory:
+            historyStore.clear()
+            AlertFactory.showMessage("History cleared", in: self)
+        case .clearWebsiteData:
+            let store = WKWebsiteDataStore.default()
+            store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {
+                DispatchQueue.main.async { AlertFactory.showMessage("Website data cleared", in: self) }
+            }
+        case .resetSettings:
+            settingsStore.reset()
+            tableView.reloadData()
+        case .none:
+            break
+        }
+    }
+
+    private func handleLinks(row: LinksRow?) {
+        let text: String
+        switch row {
         case .customSchemeExample:
-            let example = DeepLinkParser.exampleURL(for: settingsStore.settings.homeURL)?.absoluteString ?? "nativeweb://open?url=https://alhatorah.org/"
-            UIPasteboard.general.string = example
-            let alert = UIAlertController(title: "Copied", message: example, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
-
+            text = "nativeweb://open?url=https://alhatorah.org/"
         case .universalLinksNote:
-            let alert = UIAlertController(
-                title: "Universal Links",
-                message: "To open normal https links directly in this app, the website must host an apple-app-site-association file and the Xcode project must enable Associated Domains for that exact domain.",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
-
+            text = "Universal Links need apple-app-site-association on the website domain."
         case .none:
-            break
+            return
         }
+        UIPasteboard.general.string = text
+        AlertFactory.showMessage("Copied", message: text, in: self)
     }
 
-    @objc private func externalLinksChanged(_ sender: UISwitch) {
-        settingsStore.update { $0.openExternalLinksInSafariView = sender.isOn }
+    private func editText(title: String, text: String, help: String, onSave: @escaping (String) -> Void) {
+        let controller = TextListEditorViewController(title: title, text: text, helpText: help, onSave: onSave)
+        let navigation = UINavigationController(rootViewController: controller)
+        present(navigation, animated: true)
     }
 
-    @objc private func toolbarAutoHideChanged(_ sender: UISwitch) {
-        settingsStore.update { $0.hideToolbarOnScroll = sender.isOn }
+    private func makeSwitch(isOn: Bool, action: Selector) -> UISwitch {
+        let control = UISwitch()
+        control.isOn = isOn
+        control.addTarget(self, action: action, for: .valueChanged)
+        return control
     }
 
-    @objc private func desktopModeChanged(_ sender: UISwitch) {
-        settingsStore.update { $0.preferDesktopUserAgent = sender.isOn }
+    @objc private func toggleExternalLinks(_ sender: UISwitch) {
+        settingsStore.update { $0.opensExternalLinksInSafariView = sender.isOn }
+    }
+
+    @objc private func toggleToolbarAutoHide(_ sender: UISwitch) {
+        settingsStore.update { $0.toolbarAutoHideEnabled = sender.isOn }
+    }
+
+    @objc private func toggleDesktopMode(_ sender: UISwitch) {
+        settingsStore.update { $0.preferDesktopMode = sender.isOn }
     }
 
     @objc private func done() {
