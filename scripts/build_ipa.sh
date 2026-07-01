@@ -63,3 +63,4 @@ IPA_PATH="$PWD/$IPA_DIR/${SCHEME}-unsigned-device.ipa"
 
 log "IPA created: $IPA_PATH"
 log "Note: This IPA is unsigned. It confirms real-device compilation, but normal installation requires Apple signing."
+
