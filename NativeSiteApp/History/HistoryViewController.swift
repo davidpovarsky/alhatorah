@@ -30,7 +30,7 @@ final class HistoryViewController: UITableViewController {
         super.viewDidLoad()
         title = "History"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .done, target: self, action: #selector(done))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Clear", style: .plain, target: self, action: #selector(clearHistory))
 
         searchController.obscuresBackgroundDuringPresentation = false
@@ -70,7 +70,7 @@ final class HistoryViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let item = visibleItems[indexPath.row]
         let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
-            self?.historyStore.remove(id: item.id)
+            self?.historyStore.delete(id: item.id)
             completion(true)
         }
         return UISwipeActionsConfiguration(actions: [delete])
@@ -81,24 +81,20 @@ final class HistoryViewController: UITableViewController {
     }
 
     @objc private func clearHistory() {
-        let alert = AlertFactory.confirm(title: "Clear History?", message: nil, actionTitle: "Clear") { [weak self] in
+        let alert = UIAlertController(title: "Clear History", message: "Delete all history items?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Clear", style: .destructive) { [weak self] _ in
             self?.historyStore.clear()
-        }
+        })
         present(alert, animated: true)
     }
 }
 
 extension HistoryViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
-        let query = searchController.searchBar.text?.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !query.isEmpty else {
-            filteredItems = historyStore.items
-            tableView.reloadData()
-            return
-        }
-
-        filteredItems = historyStore.items.filter { item in
-            item.title.lowercased().contains(query) || item.urlString.lowercased().contains(query)
+        let query = searchController.searchBar.text?.lowercased() ?? ""
+        filteredItems = historyStore.items.filter {
+            $0.title.lowercased().contains(query) || $0.urlString.lowercased().contains(query)
         }
         tableView.reloadData()
     }
@@ -106,7 +102,6 @@ extension HistoryViewController: UISearchResultsUpdating {
 
 extension HistoryViewController: HistoryStoreDelegate {
     func historyStoreDidChange(_ store: HistoryStore) {
-        updateSearchResults(for: searchController)
         tableView.reloadData()
     }
 }
