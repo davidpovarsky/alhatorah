@@ -1,16 +1,7 @@
-﻿name: Build IPA
+name: Build IPA
 
 on:
   workflow_dispatch:
-    inputs:
-      bundle_id:
-        description: "Bundle ID override"
-        required: true
-        default: "com.example.NativeSiteApp"
-      configuration:
-        description: "Build configuration"
-        required: true
-        default: "Release"
 
 permissions:
   contents: read
@@ -29,8 +20,8 @@ jobs:
 
       - name: Build IPA
         env:
-          BUNDLE_ID: ${{ inputs.bundle_id }}
-          CONFIGURATION: ${{ inputs.configuration }}
+          BUNDLE_ID: com.davidpovarsky.alhatorah
+          CONFIGURATION: Release
         run: |
           chmod +x scripts/build_ipa.sh
           ./scripts/build_ipa.sh
