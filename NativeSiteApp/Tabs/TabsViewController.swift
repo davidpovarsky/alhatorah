@@ -27,9 +27,9 @@ final class TabsViewController: UITableViewController {
         super.viewDidLoad()
         title = "Tabs"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .done, target: self, action: #selector(done))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
         navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(systemItem: .add, target: self, action: #selector(newTab)),
+            UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(newTab)),
             UIBarButtonItem(title: "Close All", style: .plain, target: self, action: #selector(closeAll))
         ]
     }
@@ -80,16 +80,8 @@ final class TabsViewController: UITableViewController {
     }
 
     @objc private func closeAll() {
-        let alert = AlertFactory.confirm(
-            title: "Close All Tabs?",
-            message: "This keeps one new Home tab open.",
-            actionTitle: "Close All"
-        ) { [weak self] in
-            guard let self else { return }
-            self.tabStore.closeAllAndCreateHome(url: self.settings.homeURL)
-            self.tableView.reloadData()
-        }
-        present(alert, animated: true)
+        tabStore.reset(to: settings.homeURL)
+        delegate?.tabsViewControllerDidRequestNewTab(self)
     }
 }
 
