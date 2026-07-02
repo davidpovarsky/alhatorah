@@ -15,8 +15,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+
+          echo "Available Xcode apps:"
+          ls -1 /Applications | grep '^Xcode' || true
+
+          XCODE_APP="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort | tail -n 1)"
+
+          if [ -z "$XCODE_APP" ]; then
+            echo "ERROR: Xcode 26 was not found on this GitHub Actions runner."
+            echo "This build is intentionally stopped so it will not compile with an older iOS SDK."
+            exit 1
+          fi
+
+          echo "Using Xcode: $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+
+          xcodebuild -version
+
+          SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+          echo "iPhoneOS SDK version: $SDK_VERSION"
+
+          case "$SDK_VERSION" in
+            26*) echo "Confirmed iOS 26 SDK." ;;
+            *) echo "ERROR: Expected iOS 26 SDK, got $SDK_VERSION"; exit 1 ;;
+          esac
 
       - name: Build IPA
         env:
