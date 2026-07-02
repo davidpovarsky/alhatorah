@@ -3,12 +3,15 @@ import UIKit
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AppLogger.shared.logSync("Application did finish launching")
         SpotlightBackgroundScheduler.shared.register()
+        AppLogger.shared.log("Scheduling Spotlight refresh from launch")
         SpotlightBackgroundScheduler.shared.schedule()
         return true
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
+        AppLogger.shared.log("Application entered background; scheduling Spotlight refresh")
         SpotlightBackgroundScheduler.shared.schedule()
     }
 

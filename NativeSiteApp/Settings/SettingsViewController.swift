@@ -25,6 +25,7 @@ final class SettingsViewController: UITableViewController {
     private enum SpotlightRow: Int, CaseIterable {
         case updateIndex
         case deleteIndex
+        case shareDiagnosticLog
     }
 
     private enum DataRow: Int, CaseIterable {
@@ -215,6 +216,10 @@ final class SettingsViewController: UITableViewController {
             cell.textLabel?.text = "Delete Spotlight Index"
             cell.detailTextLabel?.text = "Remove AlHaTorah books from iOS Spotlight."
 
+        case .shareDiagnosticLog:
+            cell.textLabel?.text = "Share Diagnostic Log"
+            cell.detailTextLabel?.text = "Export the app log file for debugging."
+
         case .none:
             break
         }
@@ -223,29 +228,47 @@ final class SettingsViewController: UITableViewController {
     private func handleSpotlight(row: SpotlightRow?) {
         switch row {
         case .updateIndex:
-            runSpotlightRefresh(force: true)
+            runSpotlightRefresh(force: false)
         case .deleteIndex:
             deleteSpotlightIndex()
+        case .shareDiagnosticLog:
+            shareDiagnosticLog()
         case .none:
             break
         }
     }
 
     private func runSpotlightRefresh(force: Bool) {
-        let progress = UIAlertController(title: "Spotlight", message: "×ž×¢×“×›×Ÿ ××ª ××™× ×“×§×¡ ×”×¡×¤×¨×™×â€¦", preferredStyle: .alert)
+        AppLogger.shared.log("Manual Spotlight refresh requested; force=\(force)")
+        let progress = UIAlertController(
+            title: "Spotlight",
+            message: "Updating the AlHaTorah book index. The first build can take a few minutes. You can dismiss this and export the diagnostic log from Settings.",
+            preferredStyle: .alert
+        )
+        progress.addAction(UIAlertAction(title: "Keep Running", style: .cancel) { _ in
+            AppLogger.shared.log("Spotlight progress dialog dismissed; refresh continues")
+        })
         present(progress, animated: true)
 
         SpotlightIndexManager.shared.refreshIfNeeded(force: force) { [weak self] result in
             DispatchQueue.main.async {
-                progress.dismiss(animated: true) {
+                let finish = {
                     switch result {
                     case .success(let summary):
+                        AppLogger.shared.log("Manual Spotlight refresh succeeded; items=\(summary.itemCount), indexed=\(summary.indexedCount), skipped=\(summary.skipped), source=\(summary.source.rawValue)")
                         let title = summary.skipped ? "Spotlight already updated" : "Spotlight updated"
                         let message = "Books: \(summary.itemCount)\nIndexed now: \(summary.indexedCount)\nSource: \(summary.source.rawValue)"
                         self?.showMessage(title, message: message)
                     case .failure(let error):
+                        AppLogger.shared.log("Manual Spotlight refresh failed: \(error.localizedDescription)")
                         self?.showMessage("Spotlight update failed", message: error.localizedDescription)
                     }
+                }
+
+                if progress.presentingViewController != nil {
+                    progress.dismiss(animated: true, completion: finish)
+                } else {
+                    finish()
                 }
             }
         }
@@ -253,17 +276,29 @@ final class SettingsViewController: UITableViewController {
 
     private func deleteSpotlightIndex() {
         confirm(title: "Delete Spotlight Index", message: "Remove AlHaTorah books from iOS Spotlight?", actionTitle: "Delete") { [weak self] in
+            AppLogger.shared.log("Manual Spotlight delete requested")
             SpotlightIndexManager.shared.deleteAllSpotlightItems { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
+                        AppLogger.shared.log("Manual Spotlight delete succeeded")
                         self?.showMessage("Spotlight index deleted")
                     case .failure(let error):
+                        AppLogger.shared.log("Manual Spotlight delete failed: \(error.localizedDescription)")
                         self?.showMessage("Could not delete Spotlight index", message: error.localizedDescription)
                     }
                 }
             }
         }
+    }
+
+    private func shareDiagnosticLog() {
+        AppLogger.shared.log("Sharing diagnostic log from Settings")
+        let url = AppLogger.shared.logFileURL
+        let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        controller.popoverPresentationController?.sourceView = view
+        controller.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        present(controller, animated: true)
     }
     private func configureData(_ cell: UITableViewCell, row: DataRow?) {
         cell.accessoryType = .disclosureIndicator

@@ -30,7 +30,8 @@
 		AB1000000000000000000003 /* AHTJavaScriptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000003 /* AHTJavaScriptEngine.swift */; };
 		AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000004 /* BookIndexBuilder.swift */; };
 		AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000005 /* SpotlightIndexManager.swift */; };
-		AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */; };/* End PBXBuildFile section */
+		AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */; };		AB1000000000000000000007 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000007 /* AppLogger.swift */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A00000000000000000000005 /* NativeSiteApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NativeSiteApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,7 +60,8 @@
 		AB2000000000000000000003 /* AHTJavaScriptEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHTJavaScriptEngine.swift; sourceTree = "<group>"; };
 		AB2000000000000000000004 /* BookIndexBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookIndexBuilder.swift; sourceTree = "<group>"; };
 		AB2000000000000000000005 /* SpotlightIndexManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexManager.swift; sourceTree = "<group>"; };
-		AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightBackgroundScheduler.swift; sourceTree = "<group>"; };/* End PBXFileReference section */
+		AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightBackgroundScheduler.swift; sourceTree = "<group>"; };		AB2000000000000000000007 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = <group>; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A00000000000000000000008 /* Frameworks */ = {
@@ -135,6 +137,7 @@
 			children = (
 				460447A53B0767C52690D764 /* FileStore.swift */,
 				15BD17D0ED34A2F182D63C8E /* DateFormatting.swift */,
+				AB2000000000000000000007 /* AppLogger.swift */,
 				F79690E1AD23AE9B05AA384E /* AlertFactory.swift */,
 			);
 			path = Utilities;
@@ -264,6 +267,7 @@
 				A0CD064D8499682E2CDE1570 /* TabsViewController.swift in Sources */,
 				8C29D82F3CEC2EA5A6C7F80B /* HistoryViewController.swift in Sources */,
 				76CF090A39E011FA474E06AB /* TextListEditorViewController.swift in Sources */,
+				AB1000000000000000000007 /* AppLogger.swift in Sources */,
 				19CE66B1A26050E9BB54896A /* SettingsViewController.swift in Sources */,
 				AB1000000000000000000001 /* BookIndexModels.swift in Sources */,
 				AB1000000000000000000002 /* RefPHPStore.swift in Sources */,
