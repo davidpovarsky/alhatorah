@@ -54,8 +54,8 @@ final class SettingsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Settings"
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
+        title = AppLocalization.text("settings.title", "Settings")
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: AppLocalization.text("settings.done", "Done"), style: .done, target: self, action: #selector(done))
 
         tableView.keyboardDismissMode = .interactive
         tableView.rowHeight = UITableView.automaticDimension
@@ -70,12 +70,12 @@ final class SettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch Section(rawValue: section) {
-        case .website: return "Website"
-        case .behavior: return "Behavior"
-        case .spotlight: return "Spotlight"
-        case .data: return "Data"
-        case .links: return "Deep Links"
-        case .about: return "About"
+        case .website: return AppLocalization.text("settings.section.website", "Website")
+        case .behavior: return AppLocalization.text("settings.section.behavior", "Behavior")
+        case .spotlight: return AppLocalization.text("settings.section.spotlight", "Spotlight")
+        case .data: return AppLocalization.text("settings.section.data", "Data")
+        case .links: return AppLocalization.text("settings.section.links", "Deep Links")
+        case .about: return AppLocalization.text("settings.section.about", "About")
         case .none: return nil
         }
     }
@@ -83,13 +83,13 @@ final class SettingsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch Section(rawValue: section) {
         case .website:
-            return "Edit the app home page and allowed domains directly here. One domain per line. A root domain such as alhatorah.org includes subdomains such as shas.alhatorah.org."
+            return AppLocalization.text("settings.footer.website", "Edit the app home page and allowed domains directly here. One domain per line. A root domain such as alhatorah.org includes subdomains such as shas.alhatorah.org.")
         case .behavior:
-            return "External website links open in a native Safari view inside this app when enabled."
+            return AppLocalization.text("settings.footer.behavior", "External website links open in a native Safari view inside this app when enabled.")
         case .spotlight:
-            return "Downloads ref.php at most once a week, builds the book index locally, and updates iOS Spotlight in the background."
+            return AppLocalization.text("settings.footer.spotlight", "Downloads ref.php at most once a week, builds the book index locally, and updates iOS Spotlight in the background.")
         case .links:
-            return "Universal Links require control of the website domain and Apple Associated Domains. The custom URL scheme works immediately."
+            return AppLocalization.text("settings.footer.links", "Universal Links require control of the website domain and Apple Associated Domains. The custom URL scheme works immediately.")
         default:
             return nil
         }
@@ -129,8 +129,8 @@ final class SettingsViewController: UITableViewController {
             return cell
         case .about:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-            cell.textLabel?.text = "NativeSiteApp"
-            cell.detailTextLabel?.text = "UIKit WebView wrapper for alhatorah.org"
+            cell.textLabel?.text = AppLocalization.text("settings.about.title", "AlHaTorah")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.about.detail", "Native UIKit browser for alhatorah.org")
             cell.selectionStyle = .none
             return cell
         case .none:
@@ -143,7 +143,7 @@ final class SettingsViewController: UITableViewController {
         case .homeURL:
             let cell = tableView.dequeueReusableCell(withIdentifier: InlineTextFieldCell.reuseIdentifier, for: indexPath) as! InlineTextFieldCell
             cell.configure(
-                title: "Home URL",
+                title: AppLocalization.text("settings.website.home_url", "Home URL"),
                 text: settingsStore.settings.homeURLString,
                 placeholder: "https://alhatorah.org/",
                 keyboardType: .URL
@@ -158,9 +158,9 @@ final class SettingsViewController: UITableViewController {
         case .allowedDomains:
             let cell = tableView.dequeueReusableCell(withIdentifier: InlineTextViewCell.reuseIdentifier, for: indexPath) as! InlineTextViewCell
             cell.configure(
-                title: "Allowed Domains",
+                title: AppLocalization.text("settings.website.allowed_domains", "Allowed Domains"),
                 text: settingsStore.settings.allowedDomains.joined(separator: "\n"),
-                helpText: "One domain or URL per line.",
+                helpText: AppLocalization.text("settings.website.allowed_domains_help", "One domain or URL per line."),
                 minimumHeight: 92
             ) { [weak self] text in
                 let domains = text
@@ -185,18 +185,18 @@ final class SettingsViewController: UITableViewController {
 
         switch row {
         case .externalLinks:
-            cell.textLabel?.text = "External links in Safari view"
-            cell.detailTextLabel?.text = "Open outside domains in an in-app Safari sheet."
+            cell.textLabel?.text = AppLocalization.text("settings.behavior.external_links", "External links in Safari view")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.behavior.external_links_detail", "Open outside domains in an in-app Safari sheet.")
             cell.accessoryView = makeSwitch(isOn: settingsStore.settings.openExternalLinksInSafariView, action: #selector(toggleExternalLinks(_:)))
 
         case .toolbarAutoHide:
-            cell.textLabel?.text = "Hide toolbar on scroll"
-            cell.detailTextLabel?.text = "Toolbar hides while scrolling down."
+            cell.textLabel?.text = AppLocalization.text("settings.behavior.toolbar_auto_hide", "Hide toolbar on scroll")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.behavior.toolbar_auto_hide_detail", "Toolbar hides while scrolling down.")
             cell.accessoryView = makeSwitch(isOn: settingsStore.settings.hideToolbarOnScroll, action: #selector(toggleToolbarAutoHide(_:)))
 
         case .desktopMode:
-            cell.textLabel?.text = "Desktop site mode"
-            cell.detailTextLabel?.text = "Request a desktop Safari user agent."
+            cell.textLabel?.text = AppLocalization.text("settings.behavior.desktop_mode", "Desktop site mode")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.behavior.desktop_mode_detail", "Request a desktop Safari user agent.")
             cell.accessoryView = makeSwitch(isOn: settingsStore.settings.preferDesktopUserAgent, action: #selector(toggleDesktopMode(_:)))
 
         case .none:
@@ -209,16 +209,16 @@ final class SettingsViewController: UITableViewController {
 
         switch row {
         case .updateIndex:
-            cell.textLabel?.text = "Update Spotlight Index"
-            cell.detailTextLabel?.text = "Download ref.php if needed, rebuild the book index, and index books."
+            cell.textLabel?.text = AppLocalization.text("settings.spotlight.update_index", "Update Spotlight Index")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.update_index_detail", "Download ref.php if needed, rebuild the book index, and index books.")
 
         case .deleteIndex:
-            cell.textLabel?.text = "Delete Spotlight Index"
-            cell.detailTextLabel?.text = "Remove AlHaTorah books from iOS Spotlight."
+            cell.textLabel?.text = AppLocalization.text("settings.spotlight.delete_index", "Delete Spotlight Index")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.delete_index_detail", "Remove AlHaTorah books from iOS Spotlight.")
 
         case .shareDiagnosticLog:
-            cell.textLabel?.text = "Share Diagnostic Log"
-            cell.detailTextLabel?.text = "Export the app log file for debugging."
+            cell.textLabel?.text = AppLocalization.text("settings.spotlight.share_log", "Share Diagnostic Log")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.share_log_detail", "Export the app log file for debugging.")
 
         case .none:
             break
@@ -241,11 +241,11 @@ final class SettingsViewController: UITableViewController {
     private func runSpotlightRefresh(force: Bool) {
         AppLogger.shared.log("Manual Spotlight refresh requested; force=\(force)")
         let progress = UIAlertController(
-            title: "Spotlight",
-            message: "Updating the AlHaTorah book index. The first build can take a few minutes. You can dismiss this and export the diagnostic log from Settings.",
+            title: AppLocalization.text("settings.spotlight.progress_title", "Spotlight"),
+            message: AppLocalization.text("settings.spotlight.progress_message", "Updating the AlHaTorah book index. The first build can take a few minutes. You can dismiss this and export the diagnostic log from Settings."),
             preferredStyle: .alert
         )
-        progress.addAction(UIAlertAction(title: "Keep Running", style: .cancel) { _ in
+        progress.addAction(UIAlertAction(title: AppLocalization.text("settings.spotlight.keep_running", "Keep Running"), style: .cancel) { _ in
             AppLogger.shared.log("Spotlight progress dialog dismissed; refresh continues")
         })
         present(progress, animated: true)
@@ -256,12 +256,12 @@ final class SettingsViewController: UITableViewController {
                     switch result {
                     case .success(let summary):
                         AppLogger.shared.log("Manual Spotlight refresh succeeded; items=\(summary.itemCount), indexed=\(summary.indexedCount), skipped=\(summary.skipped), source=\(summary.source.rawValue)")
-                        let title = summary.skipped ? "Spotlight already updated" : "Spotlight updated"
-                        let message = "Books: \(summary.itemCount)\nIndexed now: \(summary.indexedCount)\nSource: \(summary.source.rawValue)"
+                        let title = self?.spotlightResultTitle(for: summary) ?? AppLocalization.text("settings.spotlight.updated", "Spotlight updated")
+                        let message = self?.spotlightResultMessage(for: summary)
                         self?.showMessage(title, message: message)
                     case .failure(let error):
                         AppLogger.shared.log("Manual Spotlight refresh failed: \(error.localizedDescription)")
-                        self?.showMessage("Spotlight update failed", message: error.localizedDescription)
+                        self?.showMessage(AppLocalization.text("settings.spotlight.failed", "Spotlight update failed"), message: error.localizedDescription)
                     }
                 }
 
@@ -274,18 +274,34 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
+    private func spotlightResultTitle(for summary: SpotlightRefreshSummary) -> String {
+        if summary.signature == "in-progress" {
+            return AppLocalization.text("settings.spotlight.in_progress", "Spotlight indexing is already in progress")
+        }
+        return summary.skipped
+            ? AppLocalization.text("settings.spotlight.already_updated", "Spotlight already updated")
+            : AppLocalization.text("settings.spotlight.updated", "Spotlight updated")
+    }
+
+    private func spotlightResultMessage(for summary: SpotlightRefreshSummary) -> String {
+        if summary.signature == "in-progress" {
+            return AppLocalization.text("settings.spotlight.in_progress_message", "Another indexing run is already working. Please wait for it to finish.")
+        }
+        let template = AppLocalization.text("settings.spotlight.result_message", "Books: %@\nIndexed now: %@\nSource: %@")
+        return String(format: template, "\(summary.itemCount)", "\(summary.indexedCount)", summary.source.rawValue)
+    }
     private func deleteSpotlightIndex() {
-        confirm(title: "Delete Spotlight Index", message: "Remove AlHaTorah books from iOS Spotlight?", actionTitle: "Delete") { [weak self] in
+        confirm(title: AppLocalization.text("settings.spotlight.delete_index", "Delete Spotlight Index"), message: AppLocalization.text("settings.spotlight.delete_confirm", "Remove AlHaTorah books from iOS Spotlight?"), actionTitle: AppLocalization.text("common.delete", "Delete")) { [weak self] in
             AppLogger.shared.log("Manual Spotlight delete requested")
             SpotlightIndexManager.shared.deleteAllSpotlightItems { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
                         AppLogger.shared.log("Manual Spotlight delete succeeded")
-                        self?.showMessage("Spotlight index deleted")
+                        self?.showMessage(AppLocalization.text("settings.spotlight.deleted", "Spotlight index deleted"))
                     case .failure(let error):
                         AppLogger.shared.log("Manual Spotlight delete failed: \(error.localizedDescription)")
-                        self?.showMessage("Could not delete Spotlight index", message: error.localizedDescription)
+                        self?.showMessage(AppLocalization.text("settings.spotlight.delete_failed", "Could not delete Spotlight index"), message: error.localizedDescription)
                     }
                 }
             }
@@ -305,16 +321,16 @@ final class SettingsViewController: UITableViewController {
 
         switch row {
         case .clearHistory:
-            cell.textLabel?.text = "Clear History"
-            cell.detailTextLabel?.text = "Remove saved browsing history."
+            cell.textLabel?.text = AppLocalization.text("settings.data.clear_history", "Clear History")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_history_detail", "Remove saved browsing history.")
 
         case .clearWebsiteData:
-            cell.textLabel?.text = "Clear Website Data"
-            cell.detailTextLabel?.text = "Remove cookies, cache and website storage."
+            cell.textLabel?.text = AppLocalization.text("settings.data.clear_website_data", "Clear Website Data")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_website_data_detail", "Remove cookies, cache and website storage.")
 
         case .resetSettings:
-            cell.textLabel?.text = "Reset Settings"
-            cell.detailTextLabel?.text = "Restore the default app settings."
+            cell.textLabel?.text = AppLocalization.text("settings.data.reset_settings", "Reset Settings")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.reset_settings_detail", "Restore the default app settings.")
 
         case .none:
             break
@@ -326,12 +342,12 @@ final class SettingsViewController: UITableViewController {
 
         switch row {
         case .customSchemeExample:
-            cell.textLabel?.text = "Custom URL Scheme"
+            cell.textLabel?.text = AppLocalization.text("settings.links.custom_scheme", "Custom URL Scheme")
             cell.detailTextLabel?.text = "nativeweb://open?url=https://alhatorah.org/"
 
         case .universalLinksNote:
-            cell.textLabel?.text = "Universal Links"
-            cell.detailTextLabel?.text = "Requires Associated Domains on the website."
+            cell.textLabel?.text = AppLocalization.text("settings.links.universal_links", "Universal Links")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.links.universal_links_detail", "Requires Associated Domains on the website.")
 
         case .none:
             break
@@ -356,26 +372,26 @@ final class SettingsViewController: UITableViewController {
     private func handleData(row: DataRow?) {
         switch row {
         case .clearHistory:
-            confirm(title: "Clear History", message: "Delete all saved history items?", actionTitle: "Clear") { [weak self] in
+            confirm(title: AppLocalization.text("settings.data.clear_history", "Clear History"), message: AppLocalization.text("settings.data.clear_history_confirm", "Delete all saved history items?"), actionTitle: AppLocalization.text("common.clear", "Clear")) { [weak self] in
                 self?.historyStore.clear()
-                self?.showMessage("History cleared")
+                self?.showMessage(AppLocalization.text("settings.data.history_cleared", "History cleared"))
             }
 
         case .clearWebsiteData:
-            confirm(title: "Clear Website Data", message: "Delete cookies, cache and website storage?", actionTitle: "Clear") { [weak self] in
+            confirm(title: AppLocalization.text("settings.data.clear_website_data", "Clear Website Data"), message: AppLocalization.text("settings.data.clear_website_confirm", "Delete cookies, cache and website storage?"), actionTitle: AppLocalization.text("common.clear", "Clear")) { [weak self] in
                 let store = WKWebsiteDataStore.default()
                 store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {
                     DispatchQueue.main.async {
-                        self?.showMessage("Website data cleared")
+                        self?.showMessage(AppLocalization.text("settings.data.website_data_cleared", "Website data cleared"))
                     }
                 }
             }
 
         case .resetSettings:
-            confirm(title: "Reset Settings", message: "Restore default settings?", actionTitle: "Reset") { [weak self] in
+            confirm(title: AppLocalization.text("settings.data.reset_settings", "Reset Settings"), message: AppLocalization.text("settings.data.reset_confirm", "Restore default settings?"), actionTitle: AppLocalization.text("common.reset", "Reset")) { [weak self] in
                 self?.settingsStore.reset()
                 self?.tableView.reloadData()
-                self?.showMessage("Settings reset")
+                self?.showMessage(AppLocalization.text("settings.data.settings_reset", "Settings reset"))
             }
 
         case .none:
@@ -390,13 +406,13 @@ final class SettingsViewController: UITableViewController {
         case .customSchemeExample:
             text = "nativeweb://open?url=https://alhatorah.org/"
         case .universalLinksNote:
-            text = "Universal Links need apple-app-site-association on the website domain."
+            text = AppLocalization.text("settings.links.universal_links_note", "Universal Links need apple-app-site-association on the website domain.")
         case .none:
             return
         }
 
         UIPasteboard.general.string = text
-        showMessage("Copied", message: text)
+        showMessage(AppLocalization.text("common.copied", "Copied"), message: text)
     }
 
     private func makeSwitch(isOn: Bool, action: Selector) -> UISwitch {
@@ -408,7 +424,7 @@ final class SettingsViewController: UITableViewController {
 
     private func confirm(title: String, message: String?, actionTitle: String, onConfirm: @escaping () -> Void) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: AppLocalization.text("common.cancel", "Cancel"), style: .cancel))
         alert.addAction(UIAlertAction(title: actionTitle, style: .destructive) { _ in
             onConfirm()
         })
@@ -417,7 +433,7 @@ final class SettingsViewController: UITableViewController {
 
     private func showMessage(_ title: String, message: String? = nil) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: AppLocalization.text("common.ok", "OK"), style: .default))
         present(alert, animated: true)
     }
 

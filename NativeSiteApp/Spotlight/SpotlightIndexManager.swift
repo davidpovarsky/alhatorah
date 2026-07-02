@@ -1,25 +1,48 @@
 import CoreSpotlight
 import Foundation
 import UniformTypeIdentifiers
+import UIKit
 
 final class SpotlightIndexManager {
     static let shared = SpotlightIndexManager()
 
     private let queue = DispatchQueue(label: "com.davidpovarsky.alhatorah.spotlight", qos: .utility)
+    private let stateQueue = DispatchQueue(label: "com.davidpovarsky.alhatorah.spotlight.state")
     private let domainIdentifier = "com.davidpovarsky.alhatorah.books"
     private let spotlightSignatureKey = "aht_spotlight_signature"
     private let spotlightIDPrefix = "aht-book:"
     private let batchSize = 250
+    private let thumbnailData = UIImage(named: "SpotlightIcon")?.pngData()
+
+    private var isRefreshing = false
 
     private init() {}
 
     func refreshIfNeeded(force: Bool = false, completion: ((Result<SpotlightRefreshSummary, Error>) -> Void)? = nil) {
+        guard beginRefresh() else {
+            AppLogger.shared.log("Spotlight refresh ignored because another refresh is already running")
+            completion?(.success(SpotlightRefreshSummary(
+                itemCount: 0,
+                indexedCount: 0,
+                skipped: true,
+                source: .cached,
+                signature: "in-progress",
+                message: AppLocalization.text("settings.spotlight.in_progress", "Spotlight indexing is already in progress")
+            )))
+            return
+        }
+
         AppLogger.shared.log("Spotlight refresh started; force=\(force)")
+        let finish: (Result<SpotlightRefreshSummary, Error>) -> Void = { [weak self] result in
+            self?.endRefresh()
+            completion?(result)
+        }
+
         RefPHPStore.shared.loadRefPHP(forceDownload: force) { result in
             switch result {
             case .failure(let error):
                 AppLogger.shared.log("Spotlight refresh failed while loading ref.php: \(error.localizedDescription)")
-                completion?(.failure(error))
+                finish(.failure(error))
             case .success(let document):
                 self.queue.async {
                     do {
@@ -31,7 +54,7 @@ final class SpotlightIndexManager {
 
                         if !force && storedSignature == signature {
                             AppLogger.shared.log("Spotlight already up to date; signature=\(signature)")
-                            completion?(.success(SpotlightRefreshSummary(
+                            finish(.success(SpotlightRefreshSummary(
                                 itemCount: bundle.booksIndex.count,
                                 indexedCount: 0,
                                 skipped: true,
@@ -42,10 +65,10 @@ final class SpotlightIndexManager {
                             return
                         }
 
-                        self.index(bundle.booksIndex, signature: signature, source: document.source, completion: completion)
+                        self.index(bundle.booksIndex, signature: signature, source: document.source, completion: finish)
                     } catch {
                         AppLogger.shared.log("Spotlight refresh failed while building index: \(error.localizedDescription)")
-                        completion?(.failure(error))
+                        finish(.failure(error))
                     }
                 }
             }
@@ -103,6 +126,20 @@ final class SpotlightIndexManager {
                     }
                 }
             }
+        }
+    }
+
+    private func beginRefresh() -> Bool {
+        stateQueue.sync {
+            if isRefreshing { return false }
+            isRefreshing = true
+            return true
+        }
+    }
+
+    private func endRefresh() {
+        stateQueue.sync {
+            isRefreshing = false
         }
     }
 
@@ -167,18 +204,19 @@ final class SpotlightIndexManager {
 
     private func makeSearchableItem(from item: BookIndexItem) -> CSSearchableItem {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
-        let categories = item.categoryTitles.joined(separator: " â€º ")
-        let sectionNames = item.sectionNames.joined(separator: " â€º ")
-        let aliases = compact([item.titleHe, item.titleEn, item.id] + item.aliases, limit: 20)
-        let keywords = compact(item.categoryTitles + item.sectionNames + item.aliases, limit: 40)
+        let primaryTitle = localizedPrimaryTitle(for: item)
+        let alternateTitle = localizedAlternateTitle(for: item)
+        let aliases = compact([alternateTitle, item.titleHe, item.titleEn, item.id] + item.aliases, limit: 24)
+        let keywords = compact([item.titleHe, item.titleEn, item.id] + item.categoryTitles + item.sectionNames + item.aliases, limit: 60)
 
-        attributeSet.title = item.titleHe
-        attributeSet.displayName = item.titleHe
+        attributeSet.title = primaryTitle
+        attributeSet.displayName = primaryTitle
         attributeSet.alternateNames = aliases
-        attributeSet.contentDescription = compact([item.titleEn, categories, sectionNames], limit: 3).joined(separator: "\n")
-        attributeSet.kind = "AlHaTorah source"
+        attributeSet.contentDescription = localizedSpotlightDescription(for: item)
+        attributeSet.kind = AppLocalization.text("spotlight.kind", "AlHaTorah source")
         attributeSet.keywords = keywords
-        attributeSet.textContent = compact([item.titleHe, item.titleEn, item.id, item.searchableText] + item.aliases, limit: 12).joined(separator: " ")
+        attributeSet.textContent = compact([item.titleHe, item.titleEn, item.id, item.searchableText] + item.categoryTitles + item.sectionNames + item.aliases, limit: 30).joined(separator: " ")
+        attributeSet.thumbnailData = thumbnailData
 
         return CSSearchableItem(
             uniqueIdentifier: spotlightIdentifier(for: item.id),
@@ -187,8 +225,29 @@ final class SpotlightIndexManager {
         )
     }
 
+    private func localizedPrimaryTitle(for item: BookIndexItem) -> String {
+        if AppLocalization.isHebrew {
+            return item.titleHe.isEmpty ? item.titleEn : item.titleHe
+        }
+        return item.titleEn.isEmpty ? item.titleHe : item.titleEn
+    }
+
+    private func localizedAlternateTitle(for item: BookIndexItem) -> String {
+        if AppLocalization.isHebrew {
+            return item.titleEn.isEmpty ? item.id : item.titleEn
+        }
+        return item.titleHe.isEmpty ? item.id : item.titleHe
+    }
+
+    private func localizedSpotlightDescription(for item: BookIndexItem) -> String {
+        if AppLocalization.isHebrew {
+            return AppLocalization.text("spotlight.description.he", "מקור בספריית על־התורה")
+        }
+        return AppLocalization.text("spotlight.description.en", "AlHaTorah library source")
+    }
+
     private func spotlightSignature(refSignature: String, itemCount: Int) -> String {
-        "\(refSignature):\(itemCount):native-spotlight"
+        "\(refSignature):\(itemCount):native-spotlight-localized-v2"
     }
 
     func spotlightIdentifier(for bookId: String) -> String {

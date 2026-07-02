@@ -43,7 +43,7 @@ final class BrowserViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        title = "Browser"
+        title = AppLocalization.text("browser.title", "Browser")
         configureWebView()
         configureToolbar()
         configureGestures()
@@ -52,18 +52,33 @@ final class BrowserViewController: UIViewController {
     }
 
     func openIncomingURL(_ url: URL) {
+        openIncomingURL(url, inNewTab: false)
+    }
+
+    func openIncomingURLInNewTab(_ url: URL) {
+        openIncomingURL(url, inNewTab: true)
+    }
+
+    private func openIncomingURL(_ url: URL, inNewTab: Bool) {
         let policy = URLPolicy(settings: settingsStore.settings)
         switch policy.decision(for: url) {
         case .internalWeb:
-            tabStore.updateCurrentTab(title: nil, url: url)
-            load(url)
+            if inNewTab {
+                captureCurrentTabSnapshot { [weak self] in
+                    guard let self else { return }
+                    self.tabStore.createTab(title: AppLocalization.text("tabs.new", "New Tab"), url: url, select: true)
+                    self.load(url)
+                }
+            } else {
+                tabStore.updateCurrentTab(title: nil, url: url)
+                load(url)
+            }
         case .externalWeb:
             presentSafariView(for: url)
         case .systemExternal:
             openSystemURL(url)
         }
     }
-
     private func configureWebView() {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
@@ -191,8 +206,8 @@ final class BrowserViewController: UIViewController {
         let backItems = Array(webView.backForwardList.backList.reversed())
         let forwardItems = webView.backForwardList.forwardList
 
-        backItem?.menu = makeNavigationMenu(title: "Back", items: backItems)
-        forwardItem?.menu = makeNavigationMenu(title: "Forward", items: forwardItems)
+        backItem?.menu = makeNavigationMenu(title: AppLocalization.text("navigation.back", "Back"), items: backItems)
+        forwardItem?.menu = makeNavigationMenu(title: AppLocalization.text("navigation.forward", "Forward"), items: forwardItems)
     }
 
     private func makeNavigationMenu(title: String, items: [WKBackForwardListItem]) -> UIMenu? {

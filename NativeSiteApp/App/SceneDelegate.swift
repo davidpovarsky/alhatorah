@@ -55,7 +55,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             SpotlightIndexManager.shared.urlForSpotlightIdentifier(identifier) { [weak self] url in
                 DispatchQueue.main.async {
                     guard let url else { return }
-                    self?.browserViewController?.openIncomingURL(url)
+                    self?.browserViewController?.openIncomingURLInNewTab(url)
                 }
             }
             return
