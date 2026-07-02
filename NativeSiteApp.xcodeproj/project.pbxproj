@@ -30,7 +30,8 @@
 		AB1000000000000000000003 /* AHTJavaScriptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000003 /* AHTJavaScriptEngine.swift */; };
 		AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000004 /* BookIndexBuilder.swift */; };
 		AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000005 /* SpotlightIndexManager.swift */; };
-		AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */; };		AB1000000000000000000007 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000007 /* AppLogger.swift */; };
+		AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */; };
+		AB1000000000000000000007 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000007 /* AppLogger.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,7 +61,8 @@
 		AB2000000000000000000003 /* AHTJavaScriptEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHTJavaScriptEngine.swift; sourceTree = "<group>"; };
 		AB2000000000000000000004 /* BookIndexBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookIndexBuilder.swift; sourceTree = "<group>"; };
 		AB2000000000000000000005 /* SpotlightIndexManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexManager.swift; sourceTree = "<group>"; };
-		AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightBackgroundScheduler.swift; sourceTree = "<group>"; };		AB2000000000000000000007 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = <group>; };
+		AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightBackgroundScheduler.swift; sourceTree = "<group>"; };
+		AB2000000000000000000007 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,7 +189,8 @@
 			);
 			path = Spotlight;
 			sourceTree = "<group>";
-		};/* End PBXGroup section */
+		};
+/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		A00000000000000000000006 /* NativeSiteApp */ = {
