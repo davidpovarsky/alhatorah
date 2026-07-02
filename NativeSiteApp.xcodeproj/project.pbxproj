@@ -1,4 +1,4 @@
-﻿// !$*UTF8*$!
+// !$*UTF8*$!
 {
 	archiveVersion = 1;
 	classes = {};
@@ -25,7 +25,12 @@
 		8C29D82F3CEC2EA5A6C7F80B /* HistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71B0FCD8CE1EEE95EEABAE6 /* HistoryViewController.swift */; };
 		76CF090A39E011FA474E06AB /* TextListEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A3AE9D2EEAE7B959A364ED /* TextListEditorViewController.swift */; };
 		19CE66B1A26050E9BB54896A /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2DBA92A69562D286892E13 /* SettingsViewController.swift */; };
-/* End PBXBuildFile section */
+		AB1000000000000000000001 /* BookIndexModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000001 /* BookIndexModels.swift */; };
+		AB1000000000000000000002 /* RefPHPStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000002 /* RefPHPStore.swift */; };
+		AB1000000000000000000003 /* AHTJavaScriptEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000003 /* AHTJavaScriptEngine.swift */; };
+		AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000004 /* BookIndexBuilder.swift */; };
+		AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000005 /* SpotlightIndexManager.swift */; };
+		AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */; };/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A00000000000000000000005 /* NativeSiteApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NativeSiteApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -49,7 +54,12 @@
 		D71B0FCD8CE1EEE95EEABAE6 /* HistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewController.swift; sourceTree = "<group>"; };
 		74A3AE9D2EEAE7B959A364ED /* TextListEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextListEditorViewController.swift; sourceTree = "<group>"; };
 		CA2DBA92A69562D286892E13 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
-/* End PBXFileReference section */
+		AB2000000000000000000001 /* BookIndexModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookIndexModels.swift; sourceTree = "<group>"; };
+		AB2000000000000000000002 /* RefPHPStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefPHPStore.swift; sourceTree = "<group>"; };
+		AB2000000000000000000003 /* AHTJavaScriptEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHTJavaScriptEngine.swift; sourceTree = "<group>"; };
+		AB2000000000000000000004 /* BookIndexBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookIndexBuilder.swift; sourceTree = "<group>"; };
+		AB2000000000000000000005 /* SpotlightIndexManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightIndexManager.swift; sourceTree = "<group>"; };
+		AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightBackgroundScheduler.swift; sourceTree = "<group>"; };/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A00000000000000000000008 /* Frameworks */ = {
@@ -89,6 +99,7 @@
 				A00000000000000000000024 /* Tabs */,
 				A00000000000000000000025 /* History */,
 				A00000000000000000000026 /* Settings */,
+				AB3000000000000000000001 /* Spotlight */,
 			);
 			path = NativeSiteApp;
 			sourceTree = "<group>";
@@ -114,6 +125,7 @@
 				98E99B8C292B463FFCCBA1B6 /* HistoryItem.swift */,
 				B751AF7D07F48D97D6B3824E /* TabStore.swift */,
 				FB74F73CDE93D93AF9378062 /* HistoryStore.swift */,
+				AB2000000000000000000001 /* BookIndexModels.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -161,7 +173,18 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
-/* End PBXGroup section */
+		AB3000000000000000000001 /* Spotlight */ = {
+			isa = PBXGroup;
+			children = (
+				AB2000000000000000000002 /* RefPHPStore.swift */,
+				AB2000000000000000000003 /* AHTJavaScriptEngine.swift */,
+				AB2000000000000000000004 /* BookIndexBuilder.swift */,
+				AB2000000000000000000005 /* SpotlightIndexManager.swift */,
+				AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */,
+			);
+			path = Spotlight;
+			sourceTree = "<group>";
+		};/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		A00000000000000000000006 /* NativeSiteApp */ = {
@@ -242,6 +265,12 @@
 				8C29D82F3CEC2EA5A6C7F80B /* HistoryViewController.swift in Sources */,
 				76CF090A39E011FA474E06AB /* TextListEditorViewController.swift in Sources */,
 				19CE66B1A26050E9BB54896A /* SettingsViewController.swift in Sources */,
+				AB1000000000000000000001 /* BookIndexModels.swift in Sources */,
+				AB1000000000000000000002 /* RefPHPStore.swift in Sources */,
+				AB1000000000000000000003 /* AHTJavaScriptEngine.swift in Sources */,
+				AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */,
+				AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */,
+				AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

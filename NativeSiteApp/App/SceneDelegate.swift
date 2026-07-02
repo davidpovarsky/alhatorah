@@ -1,3 +1,4 @@
+import CoreSpotlight
 import UIKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -25,6 +26,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if let activity = connectionOptions.userActivities.first {
             handleUserActivity(activity)
         }
+
+        SpotlightIndexManager.shared.refreshIfNeeded(force: false)
+        SpotlightBackgroundScheduler.shared.schedule()
+    }
+
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        SpotlightBackgroundScheduler.shared.schedule()
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
@@ -42,6 +50,17 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func handleUserActivity(_ activity: NSUserActivity) {
+        if activity.activityType == CSSearchableItemActionType,
+           let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
+            SpotlightIndexManager.shared.urlForSpotlightIdentifier(identifier) { [weak self] url in
+                DispatchQueue.main.async {
+                    guard let url else { return }
+                    self?.browserViewController?.openIncomingURL(url)
+                }
+            }
+            return
+        }
+
         guard activity.activityType == NSUserActivityTypeBrowsingWeb,
               let destination = activity.webpageURL else { return }
         browserViewController?.openIncomingURL(destination)

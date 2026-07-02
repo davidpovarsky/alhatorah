@@ -5,6 +5,7 @@ final class SettingsViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
         case website
         case behavior
+        case spotlight
         case data
         case links
         case about
@@ -19,6 +20,11 @@ final class SettingsViewController: UITableViewController {
         case externalLinks
         case toolbarAutoHide
         case desktopMode
+    }
+
+    private enum SpotlightRow: Int, CaseIterable {
+        case updateIndex
+        case deleteIndex
     }
 
     private enum DataRow: Int, CaseIterable {
@@ -65,6 +71,7 @@ final class SettingsViewController: UITableViewController {
         switch Section(rawValue: section) {
         case .website: return "Website"
         case .behavior: return "Behavior"
+        case .spotlight: return "Spotlight"
         case .data: return "Data"
         case .links: return "Deep Links"
         case .about: return "About"
@@ -78,6 +85,8 @@ final class SettingsViewController: UITableViewController {
             return "Edit the app home page and allowed domains directly here. One domain per line. A root domain such as alhatorah.org includes subdomains such as shas.alhatorah.org."
         case .behavior:
             return "External website links open in a native Safari view inside this app when enabled."
+        case .spotlight:
+            return "Downloads ref.php at most once a week, builds the book index locally, and updates iOS Spotlight in the background."
         case .links:
             return "Universal Links require control of the website domain and Apple Associated Domains. The custom URL scheme works immediately."
         default:
@@ -89,6 +98,7 @@ final class SettingsViewController: UITableViewController {
         switch Section(rawValue: section) {
         case .website: return WebsiteRow.allCases.count
         case .behavior: return BehaviorRow.allCases.count
+        case .spotlight: return SpotlightRow.allCases.count
         case .data: return DataRow.allCases.count
         case .links: return LinksRow.allCases.count
         case .about: return 1
@@ -103,6 +113,10 @@ final class SettingsViewController: UITableViewController {
         case .behavior:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
             configureBehavior(cell, row: BehaviorRow(rawValue: indexPath.row))
+            return cell
+        case .spotlight:
+            let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+            configureSpotlight(cell, row: SpotlightRow(rawValue: indexPath.row))
             return cell
         case .data:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
@@ -189,6 +203,68 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
+    private func configureSpotlight(_ cell: UITableViewCell, row: SpotlightRow?) {
+        cell.accessoryType = .disclosureIndicator
+
+        switch row {
+        case .updateIndex:
+            cell.textLabel?.text = "Update Spotlight Index"
+            cell.detailTextLabel?.text = "Download ref.php if needed, rebuild the book index, and index books."
+
+        case .deleteIndex:
+            cell.textLabel?.text = "Delete Spotlight Index"
+            cell.detailTextLabel?.text = "Remove AlHaTorah books from iOS Spotlight."
+
+        case .none:
+            break
+        }
+    }
+
+    private func handleSpotlight(row: SpotlightRow?) {
+        switch row {
+        case .updateIndex:
+            runSpotlightRefresh(force: true)
+        case .deleteIndex:
+            deleteSpotlightIndex()
+        case .none:
+            break
+        }
+    }
+
+    private func runSpotlightRefresh(force: Bool) {
+        let progress = UIAlertController(title: "Spotlight", message: "×ž×¢×“×›×Ÿ ××ª ××™× ×“×§×¡ ×”×¡×¤×¨×™×â€¦", preferredStyle: .alert)
+        present(progress, animated: true)
+
+        SpotlightIndexManager.shared.refreshIfNeeded(force: force) { [weak self] result in
+            DispatchQueue.main.async {
+                progress.dismiss(animated: true) {
+                    switch result {
+                    case .success(let summary):
+                        let title = summary.skipped ? "Spotlight already updated" : "Spotlight updated"
+                        let message = "Books: \(summary.itemCount)\nIndexed now: \(summary.indexedCount)\nSource: \(summary.source.rawValue)"
+                        self?.showMessage(title, message: message)
+                    case .failure(let error):
+                        self?.showMessage("Spotlight update failed", message: error.localizedDescription)
+                    }
+                }
+            }
+        }
+    }
+
+    private func deleteSpotlightIndex() {
+        confirm(title: "Delete Spotlight Index", message: "Remove AlHaTorah books from iOS Spotlight?", actionTitle: "Delete") { [weak self] in
+            SpotlightIndexManager.shared.deleteAllSpotlightItems { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        self?.showMessage("Spotlight index deleted")
+                    case .failure(let error):
+                        self?.showMessage("Could not delete Spotlight index", message: error.localizedDescription)
+                    }
+                }
+            }
+        }
+    }
     private func configureData(_ cell: UITableViewCell, row: DataRow?) {
         cell.accessoryType = .disclosureIndicator
 
@@ -231,6 +307,8 @@ final class SettingsViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
 
         switch Section(rawValue: indexPath.section) {
+        case .spotlight:
+            handleSpotlight(row: SpotlightRow(rawValue: indexPath.row))
         case .data:
             handleData(row: DataRow(rawValue: indexPath.row))
         case .links:
