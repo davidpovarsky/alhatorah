@@ -216,6 +216,26 @@ final class BrowserViewController: UIViewController {
         }
     }
 
+    private func captureCurrentTabSnapshot(completion: (() -> Void)? = nil) {
+        guard
+            let currentTabID = tabStore.currentTabID,
+            webView.bounds.width > 0,
+            webView.bounds.height > 0
+        else {
+            completion?()
+            return
+        }
+
+        let configuration = WKSnapshotConfiguration()
+        configuration.snapshotWidth = NSNumber(value: Double(min(webView.bounds.width, 520)))
+
+        webView.takeSnapshot(with: configuration) { image, _ in
+            if let image {
+                TabPreviewStore.save(image: image, for: currentTabID)
+            }
+            completion?()
+        }
+    }
     private func presentSafariView(for url: URL) {
         let controller = SFSafariViewController(url: url)
         controller.dismissButtonStyle = .close
@@ -264,13 +284,23 @@ final class BrowserViewController: UIViewController {
     }
 
     @objc private func showTabs() {
-        let controller = TabsViewController(tabStore: tabStore, settings: settingsStore.settings)
-        controller.delegate = self
-        let navigation = UINavigationController(rootViewController: controller)
-        navigation.modalPresentationStyle = .pageSheet
-        present(navigation, animated: true)
-    }
+        captureCurrentTabSnapshot { [weak self] in
+            guard let self else { return }
 
+            let controller = TabsViewController(tabStore: self.tabStore, settings: self.settingsStore.settings)
+            controller.delegate = self
+
+            let navigation = UINavigationController(rootViewController: controller)
+            navigation.modalPresentationStyle = .pageSheet
+
+            if let sheet = navigation.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
+            }
+
+            self.present(navigation, animated: true)
+        }
+    }
     @objc private func showSettings() {
         let controller = SettingsViewController(settingsStore: settingsStore, historyStore: historyStore)
         let navigation = UINavigationController(rootViewController: controller)
@@ -318,8 +348,8 @@ extension BrowserViewController: WKNavigationDelegate {
             historyStore.add(title: webView.title, url: url)
         }
         syncCurrentTabFromWebView()
+        captureCurrentTabSnapshot()
     }
-
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         updateToolbarItems()
     }
