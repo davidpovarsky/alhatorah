@@ -182,9 +182,44 @@ final class BrowserViewController: UIViewController {
         forwardItem?.isEnabled = webView?.canGoForward ?? false
         let imageName = webView?.isLoading == true ? "xmark" : "arrow.clockwise"
         reloadItem?.image = UIImage(systemName: imageName)
+        updateBackForwardMenus()
     }
 
-    private func updateScrollInsets() {
+    private func updateBackForwardMenus() {
+        guard let webView else { return }
+
+        let backItems = Array(webView.backForwardList.backList.reversed())
+        let forwardItems = webView.backForwardList.forwardList
+
+        backItem?.menu = makeNavigationMenu(title: "Back", items: backItems)
+        forwardItem?.menu = makeNavigationMenu(title: "Forward", items: forwardItems)
+    }
+
+    private func makeNavigationMenu(title: String, items: [WKBackForwardListItem]) -> UIMenu? {
+        guard !items.isEmpty else { return nil }
+
+        let actions = items.prefix(12).map { item in
+            UIAction(title: titleForBackForwardItem(item)) { [weak self] _ in
+                self?.webView.go(to: item)
+            }
+        }
+
+        return UIMenu(title: title, children: actions)
+    }
+
+    private func titleForBackForwardItem(_ item: WKBackForwardListItem) -> String {
+        let trimmedTitle = item.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmedTitle, !trimmedTitle.isEmpty {
+            return trimmedTitle
+        }
+
+        if let host = item.url.host, !host.isEmpty {
+            return host
+        }
+
+        return item.url.absoluteString
+    }
+private func updateScrollInsets() {
         let bottomInset = toolbarVisible ? toolbarHeightConstraint.constant : 0
         webView.scrollView.contentInset.bottom = bottomInset
         webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
@@ -278,12 +313,14 @@ final class BrowserViewController: UIViewController {
     @objc private func showHistory() {
         let controller = HistoryViewController(historyStore: historyStore)
         controller.delegate = self
+
         let navigation = UINavigationController(rootViewController: controller)
-        navigation.modalPresentationStyle = .pageSheet
+        navigation.modalPresentationStyle = .formSheet
+        navigation.preferredContentSize = CGSize(width: 460, height: 620)
+
         present(navigation, animated: true)
     }
-
-    @objc private func showTabs() {
+@objc private func showTabs() {
         captureCurrentTabSnapshot { [weak self] in
             guard let self else { return }
 
