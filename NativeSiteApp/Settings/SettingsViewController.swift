@@ -3,7 +3,7 @@ import WebKit
 
 final class SettingsViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
-        case website
+        case sites
         case behavior
         case spotlight
         case data
@@ -11,12 +11,12 @@ final class SettingsViewController: UITableViewController {
         case about
     }
 
-    private enum WebsiteRow: Int, CaseIterable {
-        case homeURL
-        case allowedDomains
+    private enum SitesRow: Int, CaseIterable {
+        case manageSites
     }
 
     private enum BehaviorRow: Int, CaseIterable {
+        case configuredSiteWindows
         case externalLinks
         case toolbarAutoHide
         case desktopMode
@@ -59,9 +59,12 @@ final class SettingsViewController: UITableViewController {
 
         tableView.keyboardDismissMode = .interactive
         tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 92
-        tableView.register(InlineTextFieldCell.self, forCellReuseIdentifier: InlineTextFieldCell.reuseIdentifier)
-        tableView.register(InlineTextViewCell.self, forCellReuseIdentifier: InlineTextViewCell.reuseIdentifier)
+        tableView.estimatedRowHeight = 76
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -70,7 +73,7 @@ final class SettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch Section(rawValue: section) {
-        case .website: return AppLocalization.text("settings.section.website", "Website")
+        case .sites: return AppLocalization.text("settings.section.sites", "Sites")
         case .behavior: return AppLocalization.text("settings.section.behavior", "Behavior")
         case .spotlight: return AppLocalization.text("settings.section.spotlight", "Spotlight")
         case .data: return AppLocalization.text("settings.section.data", "Data")
@@ -82,14 +85,14 @@ final class SettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch Section(rawValue: section) {
-        case .website:
-            return AppLocalization.text("settings.footer.website", "Edit the app home page and allowed domains directly here. One domain per line. A root domain such as alhatorah.org includes subdomains such as shas.alhatorah.org.")
+        case .sites:
+            return AppLocalization.text("settings.footer.sites", "Add multiple website profiles. Each profile has its own home URL and allowed domains. On iPad, configured sites can open in their own app window.")
         case .behavior:
-            return AppLocalization.text("settings.footer.behavior", "External website links open in a native Safari view inside this app when enabled.")
+            return AppLocalization.text("settings.footer.behavior", "External website links open in a native Safari view inside this app when enabled. Configured website links can open as separate iPad windows.")
         case .spotlight:
-            return AppLocalization.text("settings.footer.spotlight", "Downloads ref.php at most once a week, builds the book index locally, and updates iOS Spotlight in the background.")
+            return AppLocalization.text("settings.footer.spotlight", "Downloads ref.php at most once a week, builds the AlHaTorah book index locally, and updates iOS Spotlight in the background.")
         case .links:
-            return AppLocalization.text("settings.footer.links", "Universal Links require control of the website domain and Apple Associated Domains. The custom URL scheme works immediately.")
+            return AppLocalization.text("settings.footer.links", "The custom URL scheme works for any configured site. Universal Links require control of the website domain and Apple Associated Domains.")
         default:
             return nil
         }
@@ -97,7 +100,7 @@ final class SettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch Section(rawValue: section) {
-        case .website: return WebsiteRow.allCases.count
+        case .sites: return SitesRow.allCases.count
         case .behavior: return BehaviorRow.allCases.count
         case .spotlight: return SpotlightRow.allCases.count
         case .data: return DataRow.allCases.count
@@ -109,8 +112,10 @@ final class SettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch Section(rawValue: indexPath.section) {
-        case .website:
-            return websiteCell(row: WebsiteRow(rawValue: indexPath.row), indexPath: indexPath)
+        case .sites:
+            let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+            configureSites(cell, row: SitesRow(rawValue: indexPath.row))
+            return cell
         case .behavior:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
             configureBehavior(cell, row: BehaviorRow(rawValue: indexPath.row))
@@ -130,7 +135,7 @@ final class SettingsViewController: UITableViewController {
         case .about:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
             cell.textLabel?.text = AppLocalization.text("settings.about.title", "AlHaTorah")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.about.detail", "Native UIKit browser for alhatorah.org")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.about.detail", "Native UIKit multi-site browser with WKWebView windows")
             cell.selectionStyle = .none
             return cell
         case .none:
@@ -138,44 +143,16 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
-    private func websiteCell(row: WebsiteRow?, indexPath: IndexPath) -> UITableViewCell {
+    private func configureSites(_ cell: UITableViewCell, row: SitesRow?) {
+        cell.accessoryType = .disclosureIndicator
         switch row {
-        case .homeURL:
-            let cell = tableView.dequeueReusableCell(withIdentifier: InlineTextFieldCell.reuseIdentifier, for: indexPath) as! InlineTextFieldCell
-            cell.configure(
-                title: AppLocalization.text("settings.website.home_url", "Home URL"),
-                text: settingsStore.settings.homeURLString,
-                placeholder: "https://alhatorah.org/",
-                keyboardType: .URL
-            ) { [weak self] text in
-                let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                self?.settingsStore.update {
-                    $0.homeURLString = cleaned.isEmpty ? AppSettings.defaultHomeURLString : cleaned
-                }
-            }
-            return cell
-
-        case .allowedDomains:
-            let cell = tableView.dequeueReusableCell(withIdentifier: InlineTextViewCell.reuseIdentifier, for: indexPath) as! InlineTextViewCell
-            cell.configure(
-                title: AppLocalization.text("settings.website.allowed_domains", "Allowed Domains"),
-                text: settingsStore.settings.allowedDomains.joined(separator: "\n"),
-                helpText: AppLocalization.text("settings.website.allowed_domains_help", "One domain or URL per line."),
-                minimumHeight: 92
-            ) { [weak self] text in
-                let domains = text
-                    .split(whereSeparator: { $0.isNewline })
-                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-
-                self?.settingsStore.update {
-                    $0.allowedDomains = domains.isEmpty ? AppSettings.defaults.allowedDomains : domains
-                }
-            }
-            return cell
-
+        case .manageSites:
+            let settings = settingsStore.settings
+            let defaultSite = settings.defaultSite
+            cell.textLabel?.text = AppLocalization.text("settings.sites.manage", "Manage Sites")
+            cell.detailTextLabel?.text = "\(settings.siteProfiles.count) site(s) • Default: \(defaultSite.name)"
         case .none:
-            return UITableViewCell()
+            break
         }
     }
 
@@ -184,6 +161,11 @@ final class SettingsViewController: UITableViewController {
         cell.accessoryType = .none
 
         switch row {
+        case .configuredSiteWindows:
+            cell.textLabel?.text = AppLocalization.text("settings.behavior.site_windows", "Open configured sites in new windows")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.behavior.site_windows_detail", "On iPad, links to another configured site open in that site's own app window.")
+            cell.accessoryView = makeSwitch(isOn: settingsStore.settings.openConfiguredSitesInNewWindows, action: #selector(toggleConfiguredSiteWindows(_:)))
+
         case .externalLinks:
             cell.textLabel?.text = AppLocalization.text("settings.behavior.external_links", "External links in Safari view")
             cell.detailTextLabel?.text = AppLocalization.text("settings.behavior.external_links_detail", "Open outside domains in an in-app Safari sheet.")
@@ -220,6 +202,71 @@ final class SettingsViewController: UITableViewController {
             cell.textLabel?.text = AppLocalization.text("settings.spotlight.share_log", "Share Diagnostic Log")
             cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.share_log_detail", "Export the app log file for debugging.")
 
+        case .none:
+            break
+        }
+    }
+
+    private func configureData(_ cell: UITableViewCell, row: DataRow?) {
+        cell.accessoryType = .disclosureIndicator
+
+        switch row {
+        case .clearHistory:
+            cell.textLabel?.text = AppLocalization.text("settings.data.clear_history", "Clear History")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_history_detail", "Remove saved browsing history.")
+
+        case .clearWebsiteData:
+            cell.textLabel?.text = AppLocalization.text("settings.data.clear_website_data", "Clear Website Data")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_website_data_detail", "Remove cookies, cache and website storage.")
+
+        case .resetSettings:
+            cell.textLabel?.text = AppLocalization.text("settings.data.reset_settings", "Reset Settings")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.data.reset_settings_detail", "Restore the default app settings.")
+
+        case .none:
+            break
+        }
+    }
+
+    private func configureLinks(_ cell: UITableViewCell, row: LinksRow?) {
+        cell.accessoryType = .disclosureIndicator
+
+        switch row {
+        case .customSchemeExample:
+            cell.textLabel?.text = AppLocalization.text("settings.links.custom_scheme", "Custom URL Scheme")
+            cell.detailTextLabel?.text = deepLinkExampleText()
+
+        case .universalLinksNote:
+            cell.textLabel?.text = AppLocalization.text("settings.links.universal_links", "Universal Links")
+            cell.detailTextLabel?.text = AppLocalization.text("settings.links.universal_links_detail", "Requires Associated Domains on the website.")
+
+        case .none:
+            break
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        switch Section(rawValue: indexPath.section) {
+        case .sites:
+            handleSites(row: SitesRow(rawValue: indexPath.row))
+        case .spotlight:
+            handleSpotlight(row: SpotlightRow(rawValue: indexPath.row))
+        case .data:
+            handleData(row: DataRow(rawValue: indexPath.row))
+        case .links:
+            handleLinks(row: LinksRow(rawValue: indexPath.row))
+        default:
+            break
+        }
+    }
+
+    private func handleSites(row: SitesRow?) {
+        switch row {
+        case .manageSites:
+            let controller = SiteProfilesViewController(settingsStore: settingsStore)
+            navigationController?.pushViewController(controller, animated: true)
         case .none:
             break
         }
@@ -290,6 +337,7 @@ final class SettingsViewController: UITableViewController {
         let template = AppLocalization.text("settings.spotlight.result_message", "Books: %@\nIndexed now: %@\nSource: %@")
         return String(format: template, "\(summary.itemCount)", "\(summary.indexedCount)", summary.source.rawValue)
     }
+
     private func deleteSpotlightIndex() {
         confirm(title: AppLocalization.text("settings.spotlight.delete_index", "Delete Spotlight Index"), message: AppLocalization.text("settings.spotlight.delete_confirm", "Remove AlHaTorah books from iOS Spotlight?"), actionTitle: AppLocalization.text("common.delete", "Delete")) { [weak self] in
             AppLogger.shared.log("Manual Spotlight delete requested")
@@ -315,58 +363,6 @@ final class SettingsViewController: UITableViewController {
         controller.popoverPresentationController?.sourceView = view
         controller.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
         present(controller, animated: true)
-    }
-    private func configureData(_ cell: UITableViewCell, row: DataRow?) {
-        cell.accessoryType = .disclosureIndicator
-
-        switch row {
-        case .clearHistory:
-            cell.textLabel?.text = AppLocalization.text("settings.data.clear_history", "Clear History")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_history_detail", "Remove saved browsing history.")
-
-        case .clearWebsiteData:
-            cell.textLabel?.text = AppLocalization.text("settings.data.clear_website_data", "Clear Website Data")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.data.clear_website_data_detail", "Remove cookies, cache and website storage.")
-
-        case .resetSettings:
-            cell.textLabel?.text = AppLocalization.text("settings.data.reset_settings", "Reset Settings")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.data.reset_settings_detail", "Restore the default app settings.")
-
-        case .none:
-            break
-        }
-    }
-
-    private func configureLinks(_ cell: UITableViewCell, row: LinksRow?) {
-        cell.accessoryType = .disclosureIndicator
-
-        switch row {
-        case .customSchemeExample:
-            cell.textLabel?.text = AppLocalization.text("settings.links.custom_scheme", "Custom URL Scheme")
-            cell.detailTextLabel?.text = "nativeweb://open?url=https://alhatorah.org/"
-
-        case .universalLinksNote:
-            cell.textLabel?.text = AppLocalization.text("settings.links.universal_links", "Universal Links")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.links.universal_links_detail", "Requires Associated Domains on the website.")
-
-        case .none:
-            break
-        }
-    }
-
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-
-        switch Section(rawValue: indexPath.section) {
-        case .spotlight:
-            handleSpotlight(row: SpotlightRow(rawValue: indexPath.row))
-        case .data:
-            handleData(row: DataRow(rawValue: indexPath.row))
-        case .links:
-            handleLinks(row: LinksRow(rawValue: indexPath.row))
-        default:
-            break
-        }
     }
 
     private func handleData(row: DataRow?) {
@@ -404,7 +400,7 @@ final class SettingsViewController: UITableViewController {
 
         switch row {
         case .customSchemeExample:
-            text = "nativeweb://open?url=https://alhatorah.org/"
+            text = deepLinkExampleText()
         case .universalLinksNote:
             text = AppLocalization.text("settings.links.universal_links_note", "Universal Links need apple-app-site-association on the website domain.")
         case .none:
@@ -413,6 +409,12 @@ final class SettingsViewController: UITableViewController {
 
         UIPasteboard.general.string = text
         showMessage(AppLocalization.text("common.copied", "Copied"), message: text)
+    }
+
+    private func deepLinkExampleText() -> String {
+        let site = settingsStore.settings.defaultSite
+        return DeepLinkParser.exampleURL(for: site.homeURL, siteID: site.id, prefersNewWindow: true)?.absoluteString
+            ?? "nativeweb://open?url=\(site.homeURL.absoluteString)"
     }
 
     private func makeSwitch(isOn: Bool, action: Selector) -> UISwitch {
@@ -437,6 +439,10 @@ final class SettingsViewController: UITableViewController {
         present(alert, animated: true)
     }
 
+    @objc private func toggleConfiguredSiteWindows(_ sender: UISwitch) {
+        settingsStore.update { $0.openConfiguredSitesInNewWindows = sender.isOn }
+    }
+
     @objc private func toggleExternalLinks(_ sender: UISwitch) {
         settingsStore.update { $0.openExternalLinksInSafariView = sender.isOn }
     }
@@ -452,169 +458,5 @@ final class SettingsViewController: UITableViewController {
     @objc private func done() {
         view.endEditing(true)
         dismiss(animated: true)
-    }
-}
-
-private final class InlineTextFieldCell: UITableViewCell, UITextFieldDelegate {
-    static let reuseIdentifier = "InlineTextFieldCell"
-
-    private let titleLabel = UILabel()
-    private let textField = UITextField()
-    private var onChange: ((String) -> Void)?
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        configureLayout()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configure(
-        title: String,
-        text: String,
-        placeholder: String,
-        keyboardType: UIKeyboardType,
-        onChange: @escaping (String) -> Void
-    ) {
-        titleLabel.text = title
-        textField.text = text
-        textField.placeholder = placeholder
-        textField.keyboardType = keyboardType
-        self.onChange = onChange
-    }
-
-    private func configureLayout() {
-        selectionStyle = .none
-        accessoryType = .none
-
-        titleLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-        titleLabel.textColor = .secondaryLabel
-        titleLabel.adjustsFontForContentSizeCategory = true
-
-        textField.borderStyle = .roundedRect
-        textField.clearButtonMode = .whileEditing
-        textField.autocapitalizationType = .none
-        textField.autocorrectionType = .no
-        textField.returnKeyType = .done
-        textField.delegate = self
-        textField.addTarget(self, action: #selector(textFieldEditingDidEnd), for: .editingDidEnd)
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        textField.translatesAutoresizingMaskIntoConstraints = false
-
-        contentView.addSubview(titleLabel)
-        contentView.addSubview(textField)
-
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-
-            textField.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            textField.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            textField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            textField.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
-        ])
-    }
-
-    @objc private func textFieldEditingDidEnd() {
-        onChange?(textField.text ?? "")
-    }
-
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
-        return true
-    }
-}
-
-private final class InlineTextViewCell: UITableViewCell, UITextViewDelegate {
-    static let reuseIdentifier = "InlineTextViewCell"
-
-    private let titleLabel = UILabel()
-    private let textView = UITextView()
-    private let helpLabel = UILabel()
-    private var heightConstraint: NSLayoutConstraint?
-    private var onChange: ((String) -> Void)?
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        configureLayout()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func configure(
-        title: String,
-        text: String,
-        helpText: String,
-        minimumHeight: CGFloat,
-        onChange: @escaping (String) -> Void
-    ) {
-        titleLabel.text = title
-        textView.text = text
-        helpLabel.text = helpText
-        heightConstraint?.constant = minimumHeight
-        self.onChange = onChange
-    }
-
-    private func configureLayout() {
-        selectionStyle = .none
-        accessoryType = .none
-
-        titleLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-        titleLabel.textColor = .secondaryLabel
-        titleLabel.adjustsFontForContentSizeCategory = true
-
-        textView.font = UIFont.preferredFont(forTextStyle: .body)
-        textView.adjustsFontForContentSizeCategory = true
-        textView.layer.cornerRadius = 8
-        textView.layer.borderWidth = 1
-        textView.layer.borderColor = UIColor.separator.cgColor
-        textView.backgroundColor = .secondarySystemGroupedBackground
-        textView.autocapitalizationType = .none
-        textView.autocorrectionType = .no
-        textView.keyboardType = .URL
-        textView.isScrollEnabled = true
-        textView.delegate = self
-
-        helpLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-        helpLabel.textColor = .secondaryLabel
-        helpLabel.adjustsFontForContentSizeCategory = true
-        helpLabel.numberOfLines = 0
-
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        helpLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        contentView.addSubview(titleLabel)
-        contentView.addSubview(textView)
-        contentView.addSubview(helpLabel)
-
-        let height = textView.heightAnchor.constraint(greaterThanOrEqualToConstant: 92)
-        heightConstraint = height
-
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-
-            textView.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            textView.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            textView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
-            height,
-
-            helpLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            helpLabel.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            helpLabel.topAnchor.constraint(equalTo: textView.bottomAnchor, constant: 6),
-            helpLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
-        ])
-    }
-
-    func textViewDidChange(_ textView: UITextView) {
-        onChange?(textView.text)
     }
 }

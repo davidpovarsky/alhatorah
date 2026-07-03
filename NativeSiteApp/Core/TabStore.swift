@@ -7,8 +7,8 @@ protocol TabStoreDelegate: AnyObject {
 final class TabStore {
     weak var delegate: TabStoreDelegate?
 
-    private let fileName = "tabs.json"
-    private let currentTabKey = "native_site_app.current_tab_id.v1"
+    private let fileName: String
+    private let currentTabKey: String
     private let userDefaults: UserDefaults
 
     private(set) var tabs: [BrowserTab] = [] {
@@ -25,11 +25,16 @@ final class TabStore {
         }
     }
 
-    init(settings: AppSettings, userDefaults: UserDefaults = .standard) {
+    init(settings: AppSettings, siteID: String? = nil, sceneID: String? = nil, userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
+        let site = settings.siteProfile(withID: siteID) ?? settings.defaultSite
+        let scope = Self.scopeIdentifier(siteID: site.id, sceneID: sceneID)
+        self.fileName = "tabs-\(scope).json"
+        self.currentTabKey = "native_site_app.current_tab_id.\(scope).v2"
+
         self.tabs = FileStore.load([BrowserTab].self, from: fileName) ?? []
         if tabs.isEmpty {
-            let tab = BrowserTab(title: "Home", urlString: settings.homeURL.absoluteString)
+            let tab = BrowserTab(title: site.name, urlString: site.homeURL.absoluteString)
             tabs = [tab]
         }
         if let idString = userDefaults.string(forKey: currentTabKey), let id = UUID(uuidString: idString), tabs.contains(where: { $0.id == id }) {
@@ -90,5 +95,12 @@ final class TabStore {
         let tab = BrowserTab(title: "Home", urlString: url.absoluteString)
         tabs = [tab]
         currentTabID = tab.id
+    }
+
+    private static func scopeIdentifier(siteID: String, sceneID: String?) -> String {
+        let raw = [siteID, sceneID].compactMap { $0 }.joined(separator: "-")
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let filtered = raw.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
+        return String(filtered).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
     }
 }

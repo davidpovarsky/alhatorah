@@ -38,6 +38,9 @@
 		AB1000000000000000000011 /* he Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000011 /* he Localizable.strings */; };
 		AB1000000000000000000012 /* en InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000012 /* en InfoPlist.strings */; };
 		AB1000000000000000000013 /* he InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000013 /* he InfoPlist.strings */; };
+		AB1000000000000000000014 /* SiteProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000014 /* SiteProfile.swift */; };
+		AB1000000000000000000015 /* SceneLaunchRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000015 /* SceneLaunchRequest.swift */; };
+		AB1000000000000000000016 /* SiteProfilesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000016 /* SiteProfilesViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,6 +78,9 @@
 		AB2000000000000000000011 /* he Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB2000000000000000000012 /* en InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB2000000000000000000013 /* he InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AB2000000000000000000014 /* SiteProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteProfile.swift; sourceTree = "<group>"; };
+		AB2000000000000000000015 /* SceneLaunchRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneLaunchRequest.swift; sourceTree = "<group>"; };
+		AB2000000000000000000016 /* SiteProfilesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteProfilesViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +153,8 @@
 				B751AF7D07F48D97D6B3824E /* TabStore.swift */,
 				FB74F73CDE93D93AF9378062 /* HistoryStore.swift */,
 				AB2000000000000000000001 /* BookIndexModels.swift */,
+				AB2000000000000000000014 /* SiteProfile.swift */,
+				AB2000000000000000000015 /* SceneLaunchRequest.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -192,6 +200,7 @@
 			children = (
 				74A3AE9D2EEAE7B959A364ED /* TextListEditorViewController.swift */,
 				CA2DBA92A69562D286892E13 /* SettingsViewController.swift */,
+				AB2000000000000000000016 /* SiteProfilesViewController.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -307,6 +316,9 @@
 				AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */,
 				AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */,
 				AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */,
+				AB1000000000000000000014 /* SiteProfile.swift in Sources */,
+				AB1000000000000000000015 /* SceneLaunchRequest.swift in Sources */,
+				AB1000000000000000000016 /* SiteProfilesViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

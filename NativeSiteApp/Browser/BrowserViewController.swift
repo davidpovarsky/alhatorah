@@ -6,6 +6,8 @@ final class BrowserViewController: UIViewController {
     private let settingsStore: SettingsStore
     private let tabStore: TabStore
     private let historyStore: HistoryStore
+    private var siteID: String
+    private let initialURL: URL?
 
     private var webView: WKWebView!
     private let toolbar = UIToolbar()
@@ -27,10 +29,12 @@ final class BrowserViewController: UIViewController {
     private var titleObservation: NSKeyValueObservation?
     private var urlObservation: NSKeyValueObservation?
 
-    init(settingsStore: SettingsStore, tabStore: TabStore, historyStore: HistoryStore) {
+    init(settingsStore: SettingsStore, tabStore: TabStore, historyStore: HistoryStore, siteID: String? = nil, initialURL: URL? = nil) {
         self.settingsStore = settingsStore
         self.tabStore = tabStore
         self.historyStore = historyStore
+        self.siteID = siteID ?? settingsStore.settings.defaultSiteID
+        self.initialURL = initialURL
         super.init(nibName: nil, bundle: nil)
         self.settingsStore.delegate = self
         self.tabStore.delegate = self
@@ -43,7 +47,7 @@ final class BrowserViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        title = AppLocalization.text("browser.title", "Browser")
+        title = currentSite.name
         configureWebView()
         configureToolbar()
         configureGestures()
@@ -51,34 +55,76 @@ final class BrowserViewController: UIViewController {
         loadInitialPage()
     }
 
+    private var currentSite: SiteProfile {
+        settingsStore.settings.siteProfile(withID: siteID) ?? settingsStore.settings.defaultSite
+    }
+
     func openIncomingURL(_ url: URL) {
-        openIncomingURL(url, inNewTab: false)
+        openIncomingURL(url, preferredSiteID: nil, forceNewWindow: false, inNewTab: false)
+    }
+
+    func openIncomingURL(_ url: URL, preferredSiteID: String?, forceNewWindow: Bool) {
+        openIncomingURL(url, preferredSiteID: preferredSiteID, forceNewWindow: forceNewWindow, inNewTab: false)
     }
 
     func openIncomingURLInNewTab(_ url: URL) {
-        openIncomingURL(url, inNewTab: true)
+        openIncomingURL(url, preferredSiteID: nil, forceNewWindow: false, inNewTab: true)
     }
 
-    private func openIncomingURL(_ url: URL, inNewTab: Bool) {
-        let policy = URLPolicy(settings: settingsStore.settings)
+    private func openIncomingURL(_ url: URL, preferredSiteID: String?, forceNewWindow: Bool, inNewTab: Bool) {
+        let resolvedSiteID = preferredSiteID ?? settingsStore.settings.matchingSite(for: url)?.id
+
+        if forceNewWindow, UIApplication.shared.supportsMultipleScenes {
+            openURLInNewWindow(url, siteID: resolvedSiteID ?? siteID)
+            return
+        }
+
+        let policy = URLPolicy(settings: settingsStore.settings, currentSiteID: siteID)
         switch policy.decision(for: url) {
         case .internalWeb:
-            if inNewTab {
-                captureCurrentTabSnapshot { [weak self] in
-                    guard let self else { return }
-                    self.tabStore.createTab(title: AppLocalization.text("tabs.new", "New Tab"), url: url, select: true)
-                    self.load(url)
-                }
-            } else {
-                tabStore.updateCurrentTab(title: nil, url: url)
-                load(url)
-            }
+            loadInternally(url, inNewTab: inNewTab)
+        case .configuredSite(let targetSiteID):
+            openURLInNewWindow(url, siteID: resolvedSiteID ?? targetSiteID)
         case .externalWeb:
             presentSafariView(for: url)
         case .systemExternal:
             openSystemURL(url)
         }
     }
+
+    private func loadInternally(_ url: URL, inNewTab: Bool) {
+        if inNewTab {
+            captureCurrentTabSnapshot { [weak self] in
+                guard let self else { return }
+                self.tabStore.createTab(title: AppLocalization.text("tabs.new", "New Tab"), url: url, select: true)
+                self.load(url)
+            }
+        } else {
+            tabStore.updateCurrentTab(title: nil, url: url)
+            load(url)
+        }
+    }
+
+    private func openURLInNewWindow(_ url: URL, siteID targetSiteID: String) {
+        guard UIApplication.shared.supportsMultipleScenes else {
+            loadInternally(url, inNewTab: true)
+            return
+        }
+
+        let request = SceneLaunchRequest(siteID: targetSiteID, url: url, prefersNewWindow: true)
+        let activity = request.makeUserActivity(settings: settingsStore.settings)
+        UIApplication.shared.requestSceneSessionActivation(nil, userActivity: activity, options: nil) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.showSceneError(error, fallbackURL: url)
+            }
+        }
+    }
+
+    private func showSceneError(_ error: Error, fallbackURL: URL) {
+        AppLogger.shared.log("Could not open site in new scene: \(error.localizedDescription)")
+        loadInternally(fallbackURL, inNewTab: true)
+    }
+
     private func configureWebView() {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
@@ -163,10 +209,13 @@ final class BrowserViewController: UIViewController {
     }
 
     private func loadInitialPage() {
-        if let tabURL = tabStore.currentTab?.url {
+        if let initialURL {
+            tabStore.updateCurrentTab(title: nil, url: initialURL)
+            load(initialURL)
+        } else if let tabURL = tabStore.currentTab?.url {
             load(tabURL)
         } else {
-            load(settingsStore.settings.homeURL)
+            load(currentSite.homeURL)
         }
     }
 
@@ -187,7 +236,7 @@ final class BrowserViewController: UIViewController {
     private func syncCurrentTabFromWebView() {
         let pageTitle = webView.title
         let pageURL = webView.url
-        title = pageTitle?.isEmpty == false ? pageTitle : pageURL?.host
+        title = pageTitle?.isEmpty == false ? pageTitle : currentSite.name
         tabStore.updateCurrentTab(title: pageTitle, url: pageURL)
         updateToolbarItems()
     }
@@ -234,7 +283,8 @@ final class BrowserViewController: UIViewController {
 
         return item.url.absoluteString
     }
-private func updateScrollInsets() {
+
+    private func updateScrollInsets() {
         let bottomInset = toolbarVisible ? toolbarHeightConstraint.constant : 0
         webView.scrollView.contentInset.bottom = bottomInset
         webView.scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
@@ -286,6 +336,7 @@ private func updateScrollInsets() {
             completion?()
         }
     }
+
     private func presentSafariView(for url: URL) {
         let controller = SFSafariViewController(url: url)
         controller.dismissButtonStyle = .close
@@ -313,8 +364,8 @@ private func updateScrollInsets() {
     }
 
     @objc private func goHome() {
-        let homeURL = settingsStore.settings.homeURL
-        tabStore.updateCurrentTab(title: "Home", url: homeURL)
+        let homeURL = currentSite.homeURL
+        tabStore.updateCurrentTab(title: currentSite.name, url: homeURL)
         load(homeURL)
     }
 
@@ -335,7 +386,8 @@ private func updateScrollInsets() {
 
         present(navigation, animated: true)
     }
-@objc private func showTabs() {
+
+    @objc private func showTabs() {
         captureCurrentTabSnapshot { [weak self] in
             guard let self else { return }
 
@@ -353,6 +405,7 @@ private func updateScrollInsets() {
             self.present(navigation, animated: true)
         }
     }
+
     @objc private func showSettings() {
         let controller = SettingsViewController(settingsStore: settingsStore, historyStore: historyStore)
         let navigation = UINavigationController(rootViewController: controller)
@@ -378,10 +431,13 @@ extension BrowserViewController: WKNavigationDelegate {
             return
         }
 
-        let policy = URLPolicy(settings: settingsStore.settings)
+        let policy = URLPolicy(settings: settingsStore.settings, currentSiteID: siteID)
         switch policy.decision(for: url) {
         case .internalWeb:
             decisionHandler(.allow)
+        case .configuredSite(let targetSiteID):
+            decisionHandler(.cancel)
+            openURLInNewWindow(url, siteID: targetSiteID)
         case .externalWeb:
             decisionHandler(.cancel)
             if settingsStore.settings.openExternalLinksInSafariView {
@@ -402,6 +458,7 @@ extension BrowserViewController: WKNavigationDelegate {
         syncCurrentTabFromWebView()
         captureCurrentTabSnapshot()
     }
+
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         updateToolbarItems()
     }
@@ -414,11 +471,13 @@ extension BrowserViewController: WKNavigationDelegate {
 extension BrowserViewController: WKUIDelegate {
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else { return nil }
-        let policy = URLPolicy(settings: settingsStore.settings)
+        let policy = URLPolicy(settings: settingsStore.settings, currentSiteID: siteID)
         switch policy.decision(for: url) {
         case .internalWeb:
             tabStore.createTab(title: url.host ?? "New Tab", url: url, select: true)
             load(url)
+        case .configuredSite(let targetSiteID):
+            openURLInNewWindow(url, siteID: targetSiteID)
         case .externalWeb:
             presentSafariView(for: url)
         case .systemExternal:
@@ -450,7 +509,7 @@ extension BrowserViewController: UIScrollViewDelegate {
 
 extension BrowserViewController: TabsViewControllerDelegate {
     func tabsViewControllerDidRequestNewTab(_ controller: TabsViewController) {
-        let tab = tabStore.createTab(url: settingsStore.settings.homeURL, select: true)
+        let tab = tabStore.createTab(url: currentSite.homeURL, select: true)
         controller.dismiss(animated: true) { [weak self] in
             if let url = tab.url { self?.load(url) }
         }
@@ -469,13 +528,17 @@ extension BrowserViewController: HistoryViewControllerDelegate {
         controller.dismiss(animated: true) { [weak self] in
             guard let self, let url = item.url else { return }
             self.tabStore.updateCurrentTab(title: item.title, url: url)
-            self.load(url)
+            self.openIncomingURL(url)
         }
     }
 }
 
 extension BrowserViewController: SettingsStoreDelegate {
     func settingsStoreDidChange(_ store: SettingsStore) {
+        if store.settings.siteProfile(withID: siteID) == nil {
+            siteID = store.settings.defaultSiteID
+        }
+        title = currentSite.name
         applyUserAgentPreference()
         updateScrollInsets()
     }

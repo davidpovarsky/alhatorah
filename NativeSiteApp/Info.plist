@@ -24,7 +24,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.example.NativeSiteApp</string>
+            <string>com.davidpovarsky.alhatorah.nativeweb</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>nativeweb</string>
@@ -36,7 +36,7 @@
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
-        <false/>
+        <true/>
         <key>UISceneConfigurations</key>
         <dict>
             <key>UIWindowSceneSessionRoleApplication</key>
@@ -72,5 +72,6 @@
     <key>UIBackgroundModes</key>
     <array>
         <string>fetch</string>
-    </array></dict>
+    </array>
+</dict>
 </plist>

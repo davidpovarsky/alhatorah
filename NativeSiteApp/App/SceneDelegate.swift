@@ -9,9 +9,18 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         let settingsStore = SettingsStore()
-        let tabStore = TabStore(settings: settingsStore.settings)
+        let launchRequest = SceneLaunchRequest.from(connectionOptions: connectionOptions)
+        let siteID = launchRequest?.resolvedSiteID(settings: settingsStore.settings) ?? settingsStore.settings.defaultSiteID
+
+        let tabStore = TabStore(settings: settingsStore.settings, siteID: siteID, sceneID: session.persistentIdentifier)
         let historyStore = HistoryStore()
-        let browser = BrowserViewController(settingsStore: settingsStore, tabStore: tabStore, historyStore: historyStore)
+        let browser = BrowserViewController(
+            settingsStore: settingsStore,
+            tabStore: tabStore,
+            historyStore: historyStore,
+            siteID: siteID,
+            initialURL: launchRequest?.url
+        )
         let navigationController = UINavigationController(rootViewController: browser)
         navigationController.setNavigationBarHidden(true, animated: false)
 
@@ -22,9 +31,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         self.browserViewController = browser
 
-        handleURLContexts(connectionOptions.urlContexts)
-        if let activity = connectionOptions.userActivities.first {
-            handleUserActivity(activity)
+        if launchRequest == nil {
+            handleURLContexts(connectionOptions.urlContexts)
+            if let activity = connectionOptions.userActivities.first {
+                handleUserActivity(activity)
+            }
+        } else {
+            for activity in connectionOptions.userActivities where activity.activityType == CSSearchableItemActionType {
+                handleUserActivity(activity)
+            }
         }
 
         SpotlightIndexManager.shared.refreshIfNeeded(force: false)
@@ -45,8 +60,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     private func handleURLContexts(_ contexts: Set<UIOpenURLContext>) {
         guard let incomingURL = contexts.first?.url,
-              let destination = DeepLinkParser.destinationURL(from: incomingURL) else { return }
-        browserViewController?.openIncomingURL(destination)
+              let destination = DeepLinkParser.destination(from: incomingURL) else { return }
+        browserViewController?.openIncomingURL(
+            destination.url,
+            preferredSiteID: destination.siteID,
+            forceNewWindow: destination.prefersNewWindow
+        )
     }
 
     private func handleUserActivity(_ activity: NSUserActivity) {
@@ -61,8 +80,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
 
-        guard activity.activityType == NSUserActivityTypeBrowsingWeb,
-              let destination = activity.webpageURL else { return }
-        browserViewController?.openIncomingURL(destination)
+        if let request = SceneLaunchRequest.from(userActivity: activity), let url = request.url {
+            browserViewController?.openIncomingURL(
+                url,
+                preferredSiteID: request.siteID,
+                forceNewWindow: false
+            )
+            return
+        }
     }
 }
