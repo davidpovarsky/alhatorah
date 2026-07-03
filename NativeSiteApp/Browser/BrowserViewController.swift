@@ -891,7 +891,7 @@ private final class AlHaTorahIndexSearchViewController: UITableViewController, U
         }
 
         filteredItems = Array(allItems.lazy.filter { item in
-            searchableText(for: item).contains(query)
+            self.searchableText(for: item).contains(query)
         }.prefix(100))
         tableView.reloadData()
     }
