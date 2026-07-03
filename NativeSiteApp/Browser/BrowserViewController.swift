@@ -749,7 +749,7 @@ extension BrowserViewController: SiteFeatureHost {
 
         SpotlightIndexManager.shared.refreshIfNeeded(force: false) { [weak self] result in
             DispatchQueue.main.async {
-                let finish = {
+                let finish: () -> Void = {
                     switch result {
                     case .success(let summary):
                         self?.showMessage("AlHaTorah Index Updated", message: "Books: \(summary.itemCount)\nIndexed now: \(summary.indexedCount)")
