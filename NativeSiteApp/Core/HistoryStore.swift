@@ -47,7 +47,7 @@ final class HistoryStore {
     }
 
     func recentItems(forSiteID siteID: String?, limit: Int) -> [HistoryItem] {
-        Array(items(forSiteID: siteID).prefix(limit))
+        uniqueByURL(items(forSiteID: siteID), limit: limit)
     }
 
     func remove(id: UUID) {
@@ -60,6 +60,21 @@ final class HistoryStore {
         } else {
             items = []
         }
+    }
+
+    private func uniqueByURL(_ sourceItems: [HistoryItem], limit: Int) -> [HistoryItem] {
+        var seen = Set<String>()
+        var result: [HistoryItem] = []
+
+        for item in sourceItems {
+            let key = item.urlString.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !key.isEmpty, !seen.contains(key) else { continue }
+            seen.insert(key)
+            result.append(item)
+            if result.count >= limit { break }
+        }
+
+        return result
     }
 }
 
@@ -118,10 +133,25 @@ final class BookmarkStore {
     }
 
     func recentItems(forSiteID siteID: String, limit: Int) -> [BookmarkItem] {
-        Array(items(forSiteID: siteID).prefix(limit))
+        uniqueByURL(items(forSiteID: siteID), limit: limit)
     }
 
     func contains(url: URL, siteID: String) -> Bool {
         items.contains { $0.siteID == siteID && $0.urlString == url.absoluteString }
+    }
+
+    private func uniqueByURL(_ sourceItems: [BookmarkItem], limit: Int) -> [BookmarkItem] {
+        var seen = Set<String>()
+        var result: [BookmarkItem] = []
+
+        for item in sourceItems {
+            let key = item.urlString.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !key.isEmpty, !seen.contains(key) else { continue }
+            seen.insert(key)
+            result.append(item)
+            if result.count >= limit { break }
+        }
+
+        return result
     }
 }
