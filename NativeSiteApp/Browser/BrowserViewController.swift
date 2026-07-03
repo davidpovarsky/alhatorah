@@ -2,6 +2,10 @@ import UIKit
 import WebKit
 import SafariServices
 
+final class BrowserMenuCoordinator {
+    static weak var activeBrowser: BrowserViewController?
+}
+
 final class BrowserViewController: UIViewController {
     private let settingsStore: SettingsStore
     private let tabStore: TabStore
@@ -45,6 +49,10 @@ final class BrowserViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -59,13 +67,20 @@ final class BrowserViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         updateSiteWindowIdentity()
+        BrowserMenuCoordinator.activeBrowser = self
+        becomeFirstResponder()
         rebuildMainMenu()
     }
 
-    override func buildMenu(with builder: UIMenuBuilder) {
-        super.buildMenu(with: builder)
-        guard builder.system == .main else { return }
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if BrowserMenuCoordinator.activeBrowser === self {
+            BrowserMenuCoordinator.activeBrowser = nil
+            rebuildMainMenu()
+        }
+    }
 
+    func buildNativeMainMenu(with builder: UIMenuBuilder) {
         builder.remove(menu: NativeMenuIdentifier.site)
         builder.remove(menu: NativeMenuIdentifier.history)
         builder.remove(menu: NativeMenuIdentifier.bookmarks)
@@ -343,52 +358,68 @@ final class BrowserViewController: UIViewController {
         let pageURL = currentPageURL
         var actions: [UIMenuElement] = []
 
-        actions.append(UIAction(title: "Home", image: UIImage(systemName: "house")) { [weak self] _ in
-            self?.goHome()
-        })
+        actions.append(UICommand(
+            title: "Home",
+            image: UIImage(systemName: "house"),
+            action: #selector(menuGoHome(_:))
+        ))
 
-        actions.append(UIAction(title: "Open Site in New Window", image: UIImage(systemName: "macwindow.badge.plus")) { [weak self] _ in
-            guard let self else { return }
-            self.openURLInSiteWindow(self.currentSite.homeURL, siteID: self.siteID)
-        })
+        actions.append(UICommand(
+            title: "Open Site in New Window",
+            image: UIImage(systemName: "macwindow.badge.plus"),
+            action: #selector(menuOpenSiteInNewWindow(_:))
+        ))
 
-        actions.append(UIAction(title: "Copy Current Link", image: UIImage(systemName: "doc.on.doc"), attributes: pageURL == nil ? [.disabled] : []) { [weak self] _ in
-            guard let url = self?.currentPageURL else { return }
-            UIPasteboard.general.url = url
-        })
+        actions.append(UICommand(
+            title: "Copy Current Link",
+            image: UIImage(systemName: "doc.on.doc"),
+            action: #selector(menuCopyCurrentLink(_:)),
+            attributes: pageURL == nil ? [.disabled] : []
+        ))
 
-        actions.append(UIAction(title: "Open Current Page in Safari", image: UIImage(systemName: "safari"), attributes: pageURL == nil ? [.disabled] : []) { [weak self] _ in
-            guard let self, let url = self.currentPageURL else { return }
-            self.openSystemURL(url)
-        })
+        actions.append(UICommand(
+            title: "Open Current Page in Safari",
+            image: UIImage(systemName: "safari"),
+            action: #selector(menuOpenCurrentPageInSafari(_:)),
+            attributes: pageURL == nil ? [.disabled] : []
+        ))
 
-        actions.append(UIAction(title: "Add Bookmark", image: UIImage(systemName: "bookmark"), attributes: pageURL == nil ? [.disabled] : []) { [weak self] _ in
-            self?.addCurrentBookmark()
-        })
+        actions.append(UICommand(
+            title: "Add Bookmark",
+            image: UIImage(systemName: "bookmark"),
+            action: #selector(menuAddBookmark(_:)),
+            attributes: pageURL == nil ? [.disabled] : []
+        ))
 
-        actions.append(UIAction(title: "Show Site History", image: UIImage(systemName: "clock.arrow.circlepath")) { [weak self] _ in
-            self?.showHistory()
-        })
+        actions.append(UICommand(
+            title: "Show Site History",
+            image: UIImage(systemName: "clock.arrow.circlepath"),
+            action: #selector(menuShowHistory(_:))
+        ))
 
         return UIMenu(title: currentSite.name, image: UIImage(systemName: "globe"), identifier: NativeMenuIdentifier.site, children: actions)
     }
 
     private func makeHistoryMenu() -> UIMenu {
         var children: [UIMenuElement] = [
-            UIAction(title: "Show All History", image: UIImage(systemName: "clock")) { [weak self] _ in
-                self?.showHistory()
-            }
+            UICommand(
+                title: "Show All History",
+                image: UIImage(systemName: "clock"),
+                action: #selector(menuShowHistory(_:))
+            )
         ]
 
         let recent = historyStore.recentItems(forSiteID: siteID, limit: 12)
         if recent.isEmpty {
-            children.append(UIAction(title: "No recent history", attributes: [.disabled]) { _ in })
+            children.append(UICommand(title: "No recent history", action: #selector(menuNoOp(_:)), attributes: [.disabled]))
         } else {
             children.append(UIMenu(title: "Recent", options: .displayInline, children: recent.map { item in
-                UIAction(title: item.title, subtitle: item.url?.host ?? item.urlString, image: UIImage(systemName: "clock")) { [weak self] _ in
-                    guard let url = item.url else { return }
-                    self?.openIncomingURL(url)
-                }
+                UICommand(
+                    title: item.title,
+                    image: UIImage(systemName: "clock"),
+                    action: #selector(menuOpenURLCommand(_:)),
+                    propertyList: item.urlString
+                )
             }))
         }
 
@@ -397,20 +428,25 @@ final class BrowserViewController: UIViewController {
 
     private func makeBookmarksMenu() -> UIMenu {
         var children: [UIMenuElement] = [
-            UIAction(title: "Add Current Page", image: UIImage(systemName: "bookmark"), attributes: currentPageURL == nil ? [.disabled] : []) { [weak self] _ in
-                self?.addCurrentBookmark()
-            }
+            UICommand(
+                title: "Add Current Page",
+                image: UIImage(systemName: "bookmark"),
+                action: #selector(menuAddBookmark(_:)),
+                attributes: currentPageURL == nil ? [.disabled] : []
+            )
         ]
 
         let bookmarks = bookmarkStore.recentItems(forSiteID: siteID, limit: 12)
         if bookmarks.isEmpty {
-            children.append(UIAction(title: "No bookmarks for this site", attributes: [.disabled]) { _ in })
+            children.append(UICommand(title: "No bookmarks for this site", action: #selector(menuNoOp(_:)), attributes: [.disabled]))
         } else {
             children.append(UIMenu(title: "Bookmarks", options: .displayInline, children: bookmarks.map { bookmark in
-                UIAction(title: bookmark.title, subtitle: bookmark.url?.host ?? bookmark.urlString, image: UIImage(systemName: "bookmark")) { [weak self] _ in
-                    guard let url = bookmark.url else { return }
-                    self?.openIncomingURL(url)
-                }
+                UICommand(
+                    title: bookmark.title,
+                    image: UIImage(systemName: "bookmark"),
+                    action: #selector(menuOpenURLCommand(_:)),
+                    propertyList: bookmark.urlString
+                )
             }))
         }
 
@@ -563,6 +599,48 @@ final class BrowserViewController: UIViewController {
         present(navigation, animated: true)
     }
 
+    @objc private func menuGoHome(_ command: UICommand) {
+        goHome()
+    }
+
+    @objc private func menuOpenSiteInNewWindow(_ command: UICommand) {
+        openURLInSiteWindow(currentSite.homeURL, siteID: siteID)
+    }
+
+    @objc private func menuShowHistory(_ command: UICommand) {
+        showHistory()
+    }
+
+    @objc private func menuAddBookmark(_ command: UICommand) {
+        addCurrentBookmark()
+    }
+
+    @objc private func menuCopyCurrentLink(_ command: UICommand) {
+        guard let url = currentPageURL else { return }
+        UIPasteboard.general.url = url
+    }
+
+    @objc private func menuOpenCurrentPageInSafari(_ command: UICommand) {
+        guard let url = currentPageURL else { return }
+        openSystemURL(url)
+    }
+
+    @objc private func menuOpenURLCommand(_ command: UICommand) {
+        guard let urlString = command.propertyList as? String,
+              let url = URL(string: urlString) else { return }
+        openIncomingURL(url)
+    }
+
+    @objc private func menuOpenAlHaTorahIndexSearch(_ command: UICommand) {
+        openAlHaTorahIndexSearch()
+    }
+
+    @objc private func menuRefreshAlHaTorahIndex(_ command: UICommand) {
+        refreshAlHaTorahIndex()
+    }
+
+    @objc private func menuNoOp(_ command: UICommand) {}
+
     @objc private func handleBottomEdgeGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
         if gesture.state == .recognized || gesture.state == .ended {
             showToolbar(animated: true)
@@ -714,6 +792,26 @@ extension BrowserViewController: TabStoreDelegate {
 }
 
 extension BrowserViewController: SiteFeatureHost {
+    func makeAlHaTorahFeatureMenu() -> UIMenu {
+        UIMenu(
+            title: "AlHaTorah",
+            image: UIImage(systemName: "book"),
+            identifier: NativeMenuIdentifier.siteFeatures,
+            children: [
+                UICommand(
+                    title: "Search Index",
+                    image: UIImage(systemName: "magnifyingglass"),
+                    action: #selector(menuOpenAlHaTorahIndexSearch(_:))
+                ),
+                UICommand(
+                    title: "Update Index",
+                    image: UIImage(systemName: "arrow.triangle.2.circlepath"),
+                    action: #selector(menuRefreshAlHaTorahIndex(_:))
+                )
+            ]
+        )
+    }
+
     func openAlHaTorahIndexSearch() {
         guard currentSite.id == SiteProfile.alHaTorahID else { return }
 
@@ -792,32 +890,15 @@ private enum NativeMenuIdentifier {
 private protocol SiteFeatureHost: AnyObject {
     func openAlHaTorahIndexSearch()
     func refreshAlHaTorahIndex()
+    func makeAlHaTorahFeatureMenu() -> UIMenu
 }
 
 private enum SiteFeatureRegistry {
     static func menu(for site: SiteProfile, host: SiteFeatureHost) -> UIMenu? {
         if site.id == SiteProfile.alHaTorahID {
-            return AlHaTorahFeatureProvider.menu(host: host)
+            return host.makeAlHaTorahFeatureMenu()
         }
         return nil
-    }
-}
-
-private enum AlHaTorahFeatureProvider {
-    static func menu(host: SiteFeatureHost) -> UIMenu {
-        UIMenu(
-            title: "AlHaTorah",
-            image: UIImage(systemName: "book"),
-            identifier: NativeMenuIdentifier.siteFeatures,
-            children: [
-                UIAction(title: "Search Index", image: UIImage(systemName: "magnifyingglass")) { [weak host] _ in
-                    host?.openAlHaTorahIndexSearch()
-                },
-                UIAction(title: "Update Index", image: UIImage(systemName: "arrow.triangle.2.circlepath")) { [weak host] _ in
-                    host?.refreshAlHaTorahIndex()
-                }
-            ]
-        )
     }
 }
 

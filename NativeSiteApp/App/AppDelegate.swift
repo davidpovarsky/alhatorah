@@ -25,4 +25,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         configuration.delegateClass = SceneDelegate.self
         return configuration
     }
+
+    override func buildMenu(with builder: UIMenuBuilder) {
+        super.buildMenu(with: builder)
+        guard builder.system == .main else { return }
+        BrowserMenuCoordinator.activeBrowser?.buildNativeMainMenu(with: builder)
+    }
 }
