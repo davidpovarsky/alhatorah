@@ -8,16 +8,24 @@ final class HistoryViewController: UITableViewController {
     weak var delegate: HistoryViewControllerDelegate?
 
     private let historyStore: HistoryStore
+    private let siteID: String?
+    private let siteName: String?
     private let reuseIdentifier = "HistoryCell"
     private let searchController = UISearchController(searchResultsController: nil)
     private var filteredItems: [HistoryItem] = []
 
-    private var visibleItems: [HistoryItem] {
-        searchController.isActive ? filteredItems : historyStore.items
+    private var baseItems: [HistoryItem] {
+        historyStore.items(forSiteID: siteID)
     }
 
-    init(historyStore: HistoryStore) {
+    private var visibleItems: [HistoryItem] {
+        searchController.isActive ? filteredItems : baseItems
+    }
+
+    init(historyStore: HistoryStore, siteID: String? = nil, siteName: String? = nil) {
         self.historyStore = historyStore
+        self.siteID = siteID
+        self.siteName = siteName
         super.init(style: .insetGrouped)
         self.historyStore.delegate = self
     }
@@ -28,7 +36,7 @@ final class HistoryViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "History"
+        title = siteName.map { "History - \($0)" } ?? "History"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Clear", style: .plain, target: self, action: #selector(clearHistory))
@@ -81,10 +89,12 @@ final class HistoryViewController: UITableViewController {
     }
 
     @objc private func clearHistory() {
-        let alert = UIAlertController(title: "Clear History", message: "Delete all history items?", preferredStyle: .alert)
+        let message = siteName.map { "Delete saved history for \($0)?" } ?? "Delete all history items?"
+        let alert = UIAlertController(title: "Clear History", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "Clear", style: .destructive) { [weak self] _ in
-            self?.historyStore.clear()
+            guard let self else { return }
+            self.historyStore.clear(siteID: self.siteID)
         })
         present(alert, animated: true)
     }
@@ -93,7 +103,7 @@ final class HistoryViewController: UITableViewController {
 extension HistoryViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         let query = searchController.searchBar.text?.lowercased() ?? ""
-        filteredItems = historyStore.items.filter {
+        filteredItems = baseItems.filter {
             $0.title.lowercased().contains(query) || $0.urlString.lowercased().contains(query)
         }
         tableView.reloadData()
