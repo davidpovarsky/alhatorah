@@ -14,6 +14,11 @@ final class AppLogger {
     }
 
     var logFileURL: URL {
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return base.appendingPathComponent("alhatorah-diagnostic-log.txt")
+    }
+
+    var legacyLogFileURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let directory = base.appendingPathComponent("AlHaTorah", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -47,31 +52,43 @@ final class AppLogger {
     func clear() {
         queue.async {
             try? "".write(to: self.logFileURL, atomically: true, encoding: .utf8)
+            try? "".write(to: self.legacyLogFileURL, atomically: true, encoding: .utf8)
         }
     }
 
     private func ensureLogFileExists() {
-        let url = logFileURL
-        if !FileManager.default.fileExists(atPath: url.path) {
-            try? "".write(to: url, atomically: true, encoding: .utf8)
+        [logFileURL, legacyLogFileURL].forEach { url in
+            let directory = url.deletingLastPathComponent()
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                try? "".write(to: url, atomically: true, encoding: .utf8)
+            }
         }
     }
 
     private func append(_ entry: String) {
         ensureLogFileExists()
         guard let data = entry.data(using: .utf8) else { return }
+        append(data, to: logFileURL)
+        append(data, to: legacyLogFileURL)
+    }
 
-        if let handle = try? FileHandle(forWritingTo: logFileURL) {
+    private func append(_ data: Data, to url: URL) {
+        if let handle = try? FileHandle(forWritingTo: url) {
             defer { try? handle.close() }
             try? handle.seekToEnd()
             try? handle.write(contentsOf: data)
-        } else {
-            try? entry.write(to: logFileURL, atomically: true, encoding: .utf8)
+        } else if let text = String(data: data, encoding: .utf8) {
+            try? text.write(to: url, atomically: true, encoding: .utf8)
         }
     }
 
     private func trimIfNeeded() {
-        let url = logFileURL
+        trimIfNeeded(url: logFileURL)
+        trimIfNeeded(url: legacyLogFileURL)
+    }
+
+    private func trimIfNeeded(url: URL) {
         let maxSize = 600_000
         guard
             let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
