@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 protocol HistoryStoreDelegate: AnyObject {
     func historyStoreDidChange(_ store: HistoryStore)
@@ -123,5 +124,13 @@ final class BookmarkStore {
 
     func contains(url: URL, siteID: String) -> Bool {
         items.contains { $0.siteID == siteID && $0.urlString == url.absoluteString }
+    }
+}
+
+extension UIViewController {
+    func dismiss(animated flag: Bool, completion: (() -> Void?)?) {
+        dismiss(animated: flag) {
+            _ = completion?()
+        }
     }
 }
