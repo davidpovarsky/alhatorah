@@ -31,13 +31,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
-        guard builder.system == .main else {
-            AppLogger.shared.logSync("AppDelegate buildMenu ignored non-main builder")
-            return
-        }
+        guard builder.system == .main else { return }
 
-        let hasBrowser = BrowserMenuCoordinator.activeBrowser != nil
-        AppLogger.shared.logSync("AppDelegate buildMenu main started; hasActiveBrowser=\(hasBrowser)")
+        AppLogger.shared.logSync("AppDelegate buildMenu main started; hasActiveBrowser=\(BrowserMenuCoordinator.activeBrowser != nil)")
         BrowserMenuCoordinator.activeBrowser?.buildNativeMainMenu(with: builder)
         AppLogger.shared.logSync("AppDelegate buildMenu main finished")
     }
