@@ -1,4 +1,4 @@
-// !$*UTF8*$!
+﻿// !$*UTF8*$!
 {
 	archiveVersion = 1;
 	classes = {};
@@ -41,6 +41,8 @@
 		AB1000000000000000000014 /* SiteProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000014 /* SiteProfile.swift */; };
 		AB1000000000000000000015 /* SceneLaunchRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000015 /* SceneLaunchRequest.swift */; };
 		AB1000000000000000000016 /* SiteProfilesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000016 /* SiteProfilesViewController.swift */; };
+		AB1000000000000000000017 /* SiteSceneRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000017 /* SiteSceneRegistry.swift */; };
+		AB1000000000000000000018 /* AppShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000018 /* AppShortcutManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -155,6 +157,8 @@
 				AB2000000000000000000001 /* BookIndexModels.swift */,
 				AB2000000000000000000014 /* SiteProfile.swift */,
 				AB2000000000000000000015 /* SceneLaunchRequest.swift */,
+				AB2000000000000000000017 /* SiteSceneRegistry.swift */,
+				AB2000000000000000000018 /* AppShortcutManager.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -319,6 +323,8 @@
 				AB1000000000000000000014 /* SiteProfile.swift in Sources */,
 				AB1000000000000000000015 /* SceneLaunchRequest.swift in Sources */,
 				AB1000000000000000000016 /* SiteProfilesViewController.swift in Sources */,
+				AB1000000000000000000017 /* SiteSceneRegistry.swift in Sources */,
+				AB1000000000000000000018 /* AppShortcutManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

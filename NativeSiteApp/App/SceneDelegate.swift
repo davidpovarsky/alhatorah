@@ -4,6 +4,8 @@ import UIKit
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     private var browserViewController: BrowserViewController?
+    private var settingsStore: SettingsStore?
+    private var siteID: String?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
@@ -11,6 +13,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let settingsStore = SettingsStore()
         let launchRequest = SceneLaunchRequest.from(connectionOptions: connectionOptions)
         let siteID = launchRequest?.resolvedSiteID(settings: settingsStore.settings) ?? settingsStore.settings.defaultSiteID
+        let initialURL = launchRequest?.resolvedURL(settings: settingsStore.settings)
+
+        self.settingsStore = settingsStore
+        self.siteID = siteID
+        SiteSceneRegistry.shared.register(siteID: siteID, session: session)
+        updateWindowSceneTitle(windowScene, siteID: siteID, settings: settingsStore.settings)
 
         let tabStore = TabStore(settings: settingsStore.settings, siteID: siteID, sceneID: session.persistentIdentifier)
         let historyStore = HistoryStore()
@@ -19,7 +27,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             tabStore: tabStore,
             historyStore: historyStore,
             siteID: siteID,
-            initialURL: launchRequest?.url
+            initialURL: initialURL
         )
         let navigationController = UINavigationController(rootViewController: browser)
         navigationController.setNavigationBarHidden(true, animated: false)
@@ -30,6 +38,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         self.window = window
         self.browserViewController = browser
+        updateWindowSceneTitle(windowScene, siteID: siteID, settings: settingsStore.settings)
 
         if launchRequest == nil {
             handleURLContexts(connectionOptions.urlContexts)
@@ -46,6 +55,24 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         SpotlightBackgroundScheduler.shared.schedule()
     }
 
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        if let siteID {
+            SiteSceneRegistry.shared.register(siteID: siteID, session: scene.session)
+        }
+        if let windowScene = scene as? UIWindowScene,
+           let siteID,
+           let settings = settingsStore?.settings {
+            updateWindowSceneTitle(windowScene, siteID: siteID, settings: settings)
+        }
+        if let settings = settingsStore?.settings {
+            AppShortcutManager.updateQuickActions(settings: settings)
+        }
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        SiteSceneRegistry.shared.unregister(session: scene.session)
+    }
+
     func sceneDidEnterBackground(_ scene: UIScene) {
         SpotlightBackgroundScheduler.shared.schedule()
     }
@@ -56,6 +83,23 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         handleUserActivity(userActivity)
+    }
+
+    func windowScene(_ windowScene: UIWindowScene, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        guard let request = AppShortcutManager.launchRequest(from: shortcutItem),
+              let settings = settingsStore?.settings else {
+            completionHandler(false)
+            return
+        }
+
+        let resolvedSiteID = request.resolvedSiteID(settings: settings)
+        let url = request.resolvedURL(settings: settings)
+        browserViewController?.openIncomingURL(
+            url,
+            preferredSiteID: resolvedSiteID,
+            forceNewWindow: true
+        )
+        completionHandler(true)
     }
 
     private func handleURLContexts(_ contexts: Set<UIOpenURLContext>) {
@@ -80,13 +124,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
 
-        if let request = SceneLaunchRequest.from(userActivity: activity), let url = request.url {
-            browserViewController?.openIncomingURL(
-                url,
-                preferredSiteID: request.siteID,
-                forceNewWindow: false
-            )
-            return
-        }
+        guard let request = SceneLaunchRequest.from(userActivity: activity),
+              let settings = settingsStore?.settings else { return }
+
+        let resolvedSiteID = request.resolvedSiteID(settings: settings)
+        let url = request.resolvedURL(settings: settings)
+        browserViewController?.openIncomingURL(
+            url,
+            preferredSiteID: resolvedSiteID,
+            forceNewWindow: false
+        )
+    }
+
+    private func updateWindowSceneTitle(_ windowScene: UIWindowScene, siteID: String, settings: AppSettings) {
+        windowScene.title = settings.siteProfile(withID: siteID)?.name ?? settings.defaultSite.name
     }
 }

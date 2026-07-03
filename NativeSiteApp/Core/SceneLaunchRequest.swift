@@ -32,6 +32,12 @@ struct SceneLaunchRequest: Equatable {
         return settings.defaultSiteID
     }
 
+    func resolvedURL(settings: AppSettings) -> URL {
+        if let url { return url }
+        let resolvedSiteID = resolvedSiteID(settings: settings)
+        return settings.siteProfile(withID: resolvedSiteID)?.homeURL ?? settings.defaultSite.homeURL
+    }
+
     func makeUserActivity(settings: AppSettings? = nil) -> NSUserActivity {
         let activity = NSUserActivity(activityType: Self.activityType)
         activity.title = title(settings: settings)
@@ -63,8 +69,8 @@ struct SceneLaunchRequest: Equatable {
 
     static func from(userActivity: NSUserActivity) -> SceneLaunchRequest? {
         if userActivity.activityType == Self.activityType {
-            let siteID = userActivity.userInfo?[Self.siteIDKey] as? String
-            let urlString = userActivity.userInfo?[Self.urlKey] as? String
+            let siteID = stringValue(userActivity.userInfo?[Self.siteIDKey])
+            let urlString = stringValue(userActivity.userInfo?[Self.urlKey])
             let url = urlString.flatMap(URL.init(string:))
             let newWindow = userActivity.userInfo?[Self.newWindowKey] as? Bool ?? false
             return SceneLaunchRequest(siteID: siteID, url: url, prefersNewWindow: newWindow)
@@ -79,6 +85,11 @@ struct SceneLaunchRequest: Equatable {
     }
 
     static func from(connectionOptions: UIScene.ConnectionOptions) -> SceneLaunchRequest? {
+        if let shortcutItem = connectionOptions.shortcutItem,
+           let request = AppShortcutManager.launchRequest(from: shortcutItem) {
+            return request
+        }
+
         if let request = from(urlContexts: connectionOptions.urlContexts) {
             return request
         }
@@ -89,6 +100,12 @@ struct SceneLaunchRequest: Equatable {
             }
         }
 
+        return nil
+    }
+
+    private static func stringValue(_ value: Any?) -> String? {
+        if let string = value as? String { return string }
+        if let string = value as? NSString { return string as String }
         return nil
     }
 }

@@ -47,12 +47,17 @@ final class BrowserViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        title = currentSite.name
+        updateSiteWindowIdentity()
         configureWebView()
         configureToolbar()
         configureGestures()
         configureObservers()
         loadInitialPage()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateSiteWindowIdentity()
     }
 
     private var currentSite: SiteProfile {
@@ -74,8 +79,13 @@ final class BrowserViewController: UIViewController {
     private func openIncomingURL(_ url: URL, preferredSiteID: String?, forceNewWindow: Bool, inNewTab: Bool) {
         let resolvedSiteID = preferredSiteID ?? settingsStore.settings.matchingSite(for: url)?.id
 
+        if let resolvedSiteID, resolvedSiteID == siteID {
+            loadInternally(url, inNewTab: inNewTab)
+            return
+        }
+
         if forceNewWindow, UIApplication.shared.supportsMultipleScenes {
-            openURLInNewWindow(url, siteID: resolvedSiteID ?? siteID)
+            openURLInSiteWindow(url, siteID: resolvedSiteID ?? siteID)
             return
         }
 
@@ -84,7 +94,11 @@ final class BrowserViewController: UIViewController {
         case .internalWeb:
             loadInternally(url, inNewTab: inNewTab)
         case .configuredSite(let targetSiteID):
-            openURLInNewWindow(url, siteID: resolvedSiteID ?? targetSiteID)
+            if targetSiteID == siteID {
+                loadInternally(url, inNewTab: inNewTab)
+            } else {
+                openURLInSiteWindow(url, siteID: resolvedSiteID ?? targetSiteID)
+            }
         case .externalWeb:
             presentSafariView(for: url)
         case .systemExternal:
@@ -105,7 +119,7 @@ final class BrowserViewController: UIViewController {
         }
     }
 
-    private func openURLInNewWindow(_ url: URL, siteID targetSiteID: String) {
+    private func openURLInSiteWindow(_ url: URL, siteID targetSiteID: String) {
         guard UIApplication.shared.supportsMultipleScenes else {
             loadInternally(url, inNewTab: true)
             return
@@ -113,7 +127,9 @@ final class BrowserViewController: UIViewController {
 
         let request = SceneLaunchRequest(siteID: targetSiteID, url: url, prefersNewWindow: true)
         let activity = request.makeUserActivity(settings: settingsStore.settings)
-        UIApplication.shared.requestSceneSessionActivation(nil, userActivity: activity, options: nil) { [weak self] error in
+        let existingSession = SiteSceneRegistry.shared.session(for: targetSiteID, excluding: view.window?.windowScene?.session)
+
+        UIApplication.shared.requestSceneSessionActivation(existingSession, userActivity: activity, options: nil) { [weak self] error in
             DispatchQueue.main.async {
                 self?.showSceneError(error, fallbackURL: url)
             }
@@ -121,8 +137,16 @@ final class BrowserViewController: UIViewController {
     }
 
     private func showSceneError(_ error: Error, fallbackURL: URL) {
-        AppLogger.shared.log("Could not open site in new scene: \(error.localizedDescription)")
+        AppLogger.shared.log("Could not open site scene: \(error.localizedDescription)")
         loadInternally(fallbackURL, inNewTab: true)
+    }
+
+    private func updateSiteWindowIdentity() {
+        title = currentSite.name
+        view.window?.windowScene?.title = currentSite.name
+        if let session = view.window?.windowScene?.session {
+            SiteSceneRegistry.shared.register(siteID: siteID, session: session)
+        }
     }
 
     private func configureWebView() {
@@ -222,6 +246,7 @@ final class BrowserViewController: UIViewController {
     private func load(_ url: URL) {
         let request = URLRequest(url: url)
         webView.load(request)
+        updateSiteWindowIdentity()
         showToolbar(animated: true)
     }
 
@@ -236,8 +261,8 @@ final class BrowserViewController: UIViewController {
     private func syncCurrentTabFromWebView() {
         let pageTitle = webView.title
         let pageURL = webView.url
-        title = pageTitle?.isEmpty == false ? pageTitle : currentSite.name
         tabStore.updateCurrentTab(title: pageTitle, url: pageURL)
+        updateSiteWindowIdentity()
         updateToolbarItems()
     }
 
@@ -437,7 +462,11 @@ extension BrowserViewController: WKNavigationDelegate {
             decisionHandler(.allow)
         case .configuredSite(let targetSiteID):
             decisionHandler(.cancel)
-            openURLInNewWindow(url, siteID: targetSiteID)
+            if targetSiteID == siteID {
+                loadInternally(url, inNewTab: false)
+            } else {
+                openURLInSiteWindow(url, siteID: targetSiteID)
+            }
         case .externalWeb:
             decisionHandler(.cancel)
             if settingsStore.settings.openExternalLinksInSafariView {
@@ -477,7 +506,12 @@ extension BrowserViewController: WKUIDelegate {
             tabStore.createTab(title: url.host ?? "New Tab", url: url, select: true)
             load(url)
         case .configuredSite(let targetSiteID):
-            openURLInNewWindow(url, siteID: targetSiteID)
+            if targetSiteID == siteID {
+                tabStore.createTab(title: url.host ?? "New Tab", url: url, select: true)
+                load(url)
+            } else {
+                openURLInSiteWindow(url, siteID: targetSiteID)
+            }
         case .externalWeb:
             presentSafariView(for: url)
         case .systemExternal:
@@ -538,7 +572,7 @@ extension BrowserViewController: SettingsStoreDelegate {
         if store.settings.siteProfile(withID: siteID) == nil {
             siteID = store.settings.defaultSiteID
         }
-        title = currentSite.name
+        updateSiteWindowIdentity()
         applyUserAgentPreference()
         updateScrollInsets()
     }

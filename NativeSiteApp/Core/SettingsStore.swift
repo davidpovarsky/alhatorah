@@ -14,6 +14,7 @@ final class SettingsStore {
     private(set) var settings: AppSettings {
         didSet {
             save()
+            AppShortcutManager.updateQuickActions(settings: settings)
             delegate?.settingsStoreDidChange(self)
         }
     }
@@ -35,6 +36,8 @@ final class SettingsStore {
         } else {
             self.settings = .defaults
         }
+
+        AppShortcutManager.updateQuickActions(settings: settings)
     }
 
     func update(_ mutate: (inout AppSettings) -> Void) {

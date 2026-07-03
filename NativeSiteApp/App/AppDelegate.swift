@@ -7,7 +7,12 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         SpotlightBackgroundScheduler.shared.register()
         AppLogger.shared.log("Scheduling Spotlight refresh from launch")
         SpotlightBackgroundScheduler.shared.schedule()
+        AppShortcutManager.updateQuickActions(settings: SettingsStore().settings)
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        AppShortcutManager.updateQuickActions(settings: SettingsStore().settings)
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
