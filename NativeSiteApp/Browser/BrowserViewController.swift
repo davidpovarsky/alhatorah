@@ -1,4 +1,4 @@
-﻿import UIKit
+import UIKit
 import WebKit
 import SafariServices
 
@@ -248,7 +248,7 @@ final class BrowserViewController: UIViewController {
         homeItem = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(goHome))
         shareItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareCurrentPage))
         safariViewItem = UIBarButtonItem(image: UIImage(systemName: "safari"), style: .plain, target: self, action: #selector(openCurrentPageInSafariView))
-        historyItem = UIBarButtonItem(image: UIImage(systemName: "clock.arrow.circlepath"), style: .plain, target: self, action: #selector(showHistory))
+        historyItem = UIBarButtonItem(image: UIImage(systemName: "clock.arrow.circlepath"), style: .plain, target: self, action: #selector(showCurrentSiteHistory))
         tabsItem = UIBarButtonItem(image: UIImage(systemName: "square.on.square"), style: .plain, target: self, action: #selector(showTabs))
         settingsItem = UIBarButtonItem(image: UIImage(systemName: "gearshape"), style: .plain, target: self, action: #selector(showSettings))
 
@@ -374,54 +374,54 @@ final class BrowserViewController: UIViewController {
         let pageURL = currentPageURL
         let actions: [UIMenuElement] = [
             UICommand(
-                title: "×‘×™×ª",
+                title: "בית",
                 image: UIImage(systemName: "house"),
                 action: #selector(menuGoHome(_:)),
                 propertyList: "site-home"
             ),
             UICommand(
-                title: "×¤×ª×— ××ª×¨ ×‘×—×œ×•×Ÿ ×—×“×©",
+                title: "פתח אתר בחלון חדש",
                 image: UIImage(systemName: "macwindow.badge.plus"),
                 action: #selector(menuOpenSiteInNewWindow(_:)),
                 propertyList: "site-new-window"
             ),
             UICommand(
-                title: "×”×¢×ª×§ ×§×™×©×•×¨ × ×•×›×—×™",
+                title: "העתק קישור נוכחי",
                 image: UIImage(systemName: "doc.on.doc"),
                 action: #selector(menuCopyCurrentLink(_:)),
                 propertyList: "site-copy-link",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "×¤×ª×— ×“×£ × ×•×›×—×™ ×‘×¡×¤××¨×™",
+                title: "פתח דף נוכחי בספארי",
                 image: UIImage(systemName: "safari"),
                 action: #selector(menuOpenCurrentPageInSafari(_:)),
                 propertyList: "site-open-safari",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "×¤×ª×— ×“×£ × ×•×›×—×™ ×‘×¡×¤××¨×™ ×‘×ª×•×š ×”××¤×œ×™×§×¦×™×”",
+                title: "פתח דף נוכחי בספארי בתוך האפליקציה",
                 image: UIImage(systemName: "safari"),
                 action: #selector(menuOpenCurrentPageInSafariView(_:)),
                 propertyList: "site-open-safari-view",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "×©×ª×£ ×“×£ × ×•×›×—×™",
+                title: "שתף דף נוכחי",
                 image: UIImage(systemName: "square.and.arrow.up"),
                 action: #selector(menuShareCurrentPage(_:)),
                 propertyList: "site-share-page",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "×¨×¢× ×Ÿ",
+                title: "רענן",
                 image: UIImage(systemName: "arrow.clockwise"),
                 action: #selector(menuReload(_:)),
                 propertyList: "site-reload"
             )
         ]
 
-        return UIMenu(title: "××ª×¨", image: UIImage(systemName: "globe"), identifier: NativeMenuIdentifier.site, children: actions)
+        return UIMenu(title: "אתר", image: UIImage(systemName: "globe"), identifier: NativeMenuIdentifier.site, children: actions)
     }
 
     private func makeHistoryMenu() -> UIMenu {
@@ -432,7 +432,7 @@ final class BrowserViewController: UIViewController {
 
         if recent.isEmpty {
             children.append(UICommand(
-                title: "××™×Ÿ ×”×™×¡×˜×•×¨×™×” ××—×¨×•× ×”",
+                title: "אין היסטוריה אחרונה",
                 action: #selector(menuNoOp(_:)),
                 propertyList: "history-empty-\(siteID)",
                 attributes: [.disabled]
@@ -454,19 +454,19 @@ final class BrowserViewController: UIViewController {
 
         children.append(UIMenu(title: "", options: .displayInline, children: [
             UICommand(
-                title: "×”×¦×’ ××ª ×›×œ ×”×”×™×¡×˜×•×¨×™×”...",
+                title: "הצג היסטוריה של אתר זה...",
                 image: UIImage(systemName: "clock.arrow.circlepath"),
                 action: #selector(menuShowSiteHistory(_:)),
                 propertyList: "history-show-site-\(siteID)"
             ),
             UICommand(
-                title: "×”×¦×’ ×”×™×¡×˜×•×¨×™×” ×ž×›×œ ×”××ª×¨×™×...",
+                title: "הצג היסטוריה מכל האתרים...",
                 image: UIImage(systemName: "clock"),
                 action: #selector(menuShowAllHistory(_:)),
                 propertyList: "history-show-all-sites"
             ),
             UICommand(
-                title: "× ×§×” ×”×™×¡×˜×•×¨×™×” ×œ××ª×¨ ×–×”",
+                title: "נקה היסטוריה לאתר זה",
                 image: UIImage(systemName: "trash"),
                 action: #selector(menuClearSiteHistory(_:)),
                 propertyList: "history-clear-site-\(siteID)",
@@ -474,7 +474,7 @@ final class BrowserViewController: UIViewController {
             )
         ]))
 
-        return UIMenu(title: "×”×™×¡×˜×•×¨×™×”", image: UIImage(systemName: "clock.arrow.circlepath"), identifier: NativeMenuIdentifier.history, children: children)
+        return UIMenu(title: "היסטוריה", image: UIImage(systemName: "clock.arrow.circlepath"), identifier: NativeMenuIdentifier.history, children: children)
     }
 
     private func makeBookmarksMenu() -> UIMenu {
@@ -483,7 +483,7 @@ final class BrowserViewController: UIViewController {
 
         var children: [UIMenuElement] = [
             UICommand(
-                title: "×”×•×¡×£ ×“×£ × ×•×›×—×™ ×œ×ž×•×¢×“×¤×™×",
+                title: "הוסף דף נוכחי למועדפים",
                 image: UIImage(systemName: "bookmark"),
                 action: #selector(menuAddBookmark(_:)),
                 propertyList: "bookmarks-add-current",
@@ -494,7 +494,7 @@ final class BrowserViewController: UIViewController {
         if bookmarks.isEmpty {
             children.append(UIMenu(title: "", options: .displayInline, children: [
                 UICommand(
-                    title: "××™×Ÿ ×ž×•×¢×“×¤×™× ×œ××ª×¨ ×–×”",
+                    title: "אין מועדפים לאתר זה",
                     action: #selector(menuNoOp(_:)),
                     propertyList: "bookmarks-empty-\(siteID)",
                     attributes: [.disabled]
@@ -517,11 +517,11 @@ final class BrowserViewController: UIViewController {
 
 
         children.append(UIMenu(title: "", options: .displayInline, children: [
-            makeBookmarksSubmenu(title: "Show bookmarks for this site...", bookmarks: bookmarks, emptyPropertyList: "bookmarks-show-site-empty-\(siteID)"),
-            makeBookmarksSubmenu(title: "Show all bookmarks...", bookmarks: bookmarkStore.recentItems(forSiteID: nil, limit: 50), emptyPropertyList: "bookmarks-show-all-empty")
+            makeBookmarksSubmenu(title: "הצג מועדפים של אתר זה...", bookmarks: bookmarks, emptyPropertyList: "bookmarks-show-site-empty-\(siteID)"),
+            makeBookmarksSubmenu(title: "הצג כל המועדפים...", bookmarks: bookmarkStore.recentItems(forSiteID: nil, limit: 50), emptyPropertyList: "bookmarks-show-all-empty")
         ]))
 
-        return UIMenu(title: "×ž×•×¢×“×¤×™×", image: UIImage(systemName: "bookmark"), identifier: NativeMenuIdentifier.bookmarks, children: children)
+        return UIMenu(title: "מועדפים", image: UIImage(systemName: "bookmark"), identifier: NativeMenuIdentifier.bookmarks, children: children)
     }
 
     private func makeBookmarksSubmenu(title: String, bookmarks: [BookmarkItem], emptyPropertyList: String) -> UIMenu {
@@ -529,7 +529,7 @@ final class BrowserViewController: UIViewController {
         if bookmarks.isEmpty {
             children = [
                 UICommand(
-                    title: "No bookmarks",
+                    title: "אין מועדפים",
                     action: #selector(menuNoOp(_:)),
                     propertyList: emptyPropertyList,
                     attributes: [.disabled]
@@ -556,24 +556,24 @@ final class BrowserViewController: UIViewController {
     private func makeWindowsMenu() -> UIMenu {
         AppLogger.shared.logSync("makeWindowsMenu started")
         return UIMenu(
-            title: "×—×œ×•× ×•×ª",
+            title: "חלונות",
             image: UIImage(systemName: "rectangle.on.rectangle"),
             identifier: NativeMenuIdentifier.windows,
             children: [
                 UICommand(
-                    title: "×¤×ª×— ×—×œ×•×Ÿ ×—×“×© ×œ××ª×¨ ×–×”",
+                    title: "פתח חלון חדש לאתר זה",
                     image: UIImage(systemName: "macwindow.badge.plus"),
                     action: #selector(menuOpenSiteInNewWindow(_:)),
                     propertyList: "windows-new-site-window"
                 ),
                 UICommand(
-                    title: "×¤×ª×— ×œ×©×•× ×™×ª ×—×“×©×”",
+                    title: "פתח לשונית חדשה",
                     image: UIImage(systemName: "plus.square.on.square"),
                     action: #selector(menuOpenNewTab(_:)),
                     propertyList: "windows-new-tab"
                 ),
                 UICommand(
-                    title: "×”×¦×’ ×œ×©×•× ×™×•×ª",
+                    title: "הצג לשוניות",
                     image: UIImage(systemName: "square.on.square"),
                     action: #selector(menuShowTabs(_:)),
                     propertyList: "windows-show-tabs"
@@ -585,18 +585,18 @@ final class BrowserViewController: UIViewController {
     private func makeHelpMenu() -> UIMenu {
         AppLogger.shared.logSync("makeHelpMenu started")
         return UIMenu(
-            title: "×¢×–×¨×”",
+            title: "עזרה",
             image: UIImage(systemName: "questionmark.circle"),
             identifier: NativeMenuIdentifier.help,
             children: [
                 UICommand(
-                    title: "×”×¢×ª×§ ×ž×™×§×•× ×§×•×‘×¥ ×œ×•×’",
+                    title: "העתק מיקום קובץ לוג",
                     image: UIImage(systemName: "doc.on.doc"),
                     action: #selector(menuCopyLogFilePath(_:)),
                     propertyList: "help-copy-log-path"
                 ),
                 UICommand(
-                    title: "× ×§×” ×œ×•×’ ××‘×—×•×Ÿ",
+                    title: "נקה לוג אבחון",
                     image: UIImage(systemName: "trash"),
                     action: #selector(menuClearDiagnosticLog(_:)),
                     propertyList: "help-clear-log"
@@ -613,7 +613,7 @@ final class BrowserViewController: UIViewController {
         guard let url = currentPageURL else { return }
         bookmarkStore.add(title: webView?.title ?? tabStore.currentTab?.title, url: url, siteID: siteID)
         rebuildMainMenu()
-        showMessage("Bookmark Added", message: currentSite.name)
+        showMessage("המועדף נוסף", message: currentSite.name)
     }
 
     private func updateScrollInsets() {
@@ -719,7 +719,7 @@ final class BrowserViewController: UIViewController {
         presentSafariView(for: url)
     }
 
-    @objc private func showHistory() {
+    @objc private func showCurrentSiteHistory() {
         showHistory(siteID: siteID, siteName: currentSite.name)
     }
 
@@ -780,7 +780,7 @@ final class BrowserViewController: UIViewController {
         AppLogger.shared.log("menuClearSiteHistory siteID=\(siteID)")
         historyStore.clear(siteID: siteID)
         rebuildMainMenu()
-        showMessage("×”×”×™×¡×˜×•×¨×™×” × ×•×§×ª×”", message: currentSite.name)
+        showMessage("ההיסטוריה נוקתה", message: currentSite.name)
     }
 
     @objc private func menuAddBookmark(_ command: UICommand) {
@@ -839,12 +839,12 @@ final class BrowserViewController: UIViewController {
         let path = AppLogger.shared.logFileURL.path
         UIPasteboard.general.string = path
         AppLogger.shared.log("menuCopyLogFilePath path=\(path)")
-        showMessage("×ž×™×§×•× ×§×•×‘×¥ ×”×œ×•×’ ×”×•×¢×ª×§", message: path)
+        showMessage("מיקום קובץ הלוג הועתק", message: path)
     }
 
     @objc private func menuClearDiagnosticLog(_ command: UICommand) {
         AppLogger.shared.clear()
-        showMessage("×œ×•×’ ×”××‘×—×•×Ÿ × ×•×§×”")
+        showMessage("לוג האבחון נוקה")
     }
 
     @objc private func menuNoOp(_ command: UICommand) {}
