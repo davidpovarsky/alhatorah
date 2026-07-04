@@ -1,4 +1,4 @@
-import UIKit
+﻿import UIKit
 import WebKit
 import SafariServices
 
@@ -24,6 +24,7 @@ final class BrowserViewController: UIViewController {
     private var reloadItem: UIBarButtonItem!
     private var homeItem: UIBarButtonItem!
     private var shareItem: UIBarButtonItem!
+    private var safariViewItem: UIBarButtonItem!
     private var historyItem: UIBarButtonItem!
     private var tabsItem: UIBarButtonItem!
     private var settingsItem: UIBarButtonItem!
@@ -87,7 +88,6 @@ final class BrowserViewController: UIViewController {
         builder.remove(menu: NativeMenuIdentifier.site)
         builder.remove(menu: NativeMenuIdentifier.history)
         builder.remove(menu: NativeMenuIdentifier.bookmarks)
-        builder.remove(menu: NativeMenuIdentifier.siteFeatures)
         builder.remove(menu: NativeMenuIdentifier.windows)
         builder.remove(menu: NativeMenuIdentifier.help)
 
@@ -107,16 +107,9 @@ final class BrowserViewController: UIViewController {
         builder.insertSibling(siteMenu, afterMenu: .application)
         builder.insertSibling(historyMenu, afterMenu: NativeMenuIdentifier.site)
         builder.insertSibling(bookmarksMenu, afterMenu: NativeMenuIdentifier.history)
-
-        if currentSite.id == SiteProfile.alHaTorahID {
-            builder.insertSibling(makeAlHaTorahIndexMenu(), afterMenu: NativeMenuIdentifier.bookmarks)
-            builder.insertSibling(windowsMenu, afterMenu: NativeMenuIdentifier.siteFeatures)
-        } else {
-            builder.insertSibling(windowsMenu, afterMenu: NativeMenuIdentifier.bookmarks)
-        }
-
+        builder.insertSibling(windowsMenu, afterMenu: NativeMenuIdentifier.bookmarks)
         builder.insertSibling(helpMenu, afterMenu: NativeMenuIdentifier.windows)
-        AppLogger.shared.logSync("buildNativeMainMenu inserted site/history/bookmarks/index/windows/help")
+        AppLogger.shared.logSync("buildNativeMainMenu inserted site/history/bookmarks/windows/help")
     }
 
     private var currentSite: SiteProfile {
@@ -254,6 +247,7 @@ final class BrowserViewController: UIViewController {
         reloadItem = UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain, target: self, action: #selector(reloadOrStop))
         homeItem = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(goHome))
         shareItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareCurrentPage))
+        safariViewItem = UIBarButtonItem(image: UIImage(systemName: "safari"), style: .plain, target: self, action: #selector(openCurrentPageInSafariView))
         historyItem = UIBarButtonItem(image: UIImage(systemName: "clock.arrow.circlepath"), style: .plain, target: self, action: #selector(showHistory))
         tabsItem = UIBarButtonItem(image: UIImage(systemName: "square.on.square"), style: .plain, target: self, action: #selector(showTabs))
         settingsItem = UIBarButtonItem(image: UIImage(systemName: "gearshape"), style: .plain, target: self, action: #selector(showSettings))
@@ -265,6 +259,7 @@ final class BrowserViewController: UIViewController {
             homeItem,
             UIBarButtonItem(systemItem: .flexibleSpace),
             shareItem,
+            safariViewItem,
             historyItem,
             tabsItem,
             settingsItem
@@ -336,6 +331,7 @@ final class BrowserViewController: UIViewController {
         forwardItem?.isEnabled = webView?.canGoForward ?? false
         let imageName = webView?.isLoading == true ? "xmark" : "arrow.clockwise"
         reloadItem?.image = UIImage(systemName: imageName)
+        safariViewItem?.isEnabled = currentPageURL != nil
         updateBackForwardMenus()
     }
 
@@ -378,47 +374,54 @@ final class BrowserViewController: UIViewController {
         let pageURL = currentPageURL
         let actions: [UIMenuElement] = [
             UICommand(
-                title: "בית",
+                title: "×‘×™×ª",
                 image: UIImage(systemName: "house"),
                 action: #selector(menuGoHome(_:)),
                 propertyList: "site-home"
             ),
             UICommand(
-                title: "פתח אתר בחלון חדש",
+                title: "×¤×ª×— ××ª×¨ ×‘×—×œ×•×Ÿ ×—×“×©",
                 image: UIImage(systemName: "macwindow.badge.plus"),
                 action: #selector(menuOpenSiteInNewWindow(_:)),
                 propertyList: "site-new-window"
             ),
             UICommand(
-                title: "העתק קישור נוכחי",
+                title: "×”×¢×ª×§ ×§×™×©×•×¨ × ×•×›×—×™",
                 image: UIImage(systemName: "doc.on.doc"),
                 action: #selector(menuCopyCurrentLink(_:)),
                 propertyList: "site-copy-link",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "פתח דף נוכחי בספארי",
+                title: "×¤×ª×— ×“×£ × ×•×›×—×™ ×‘×¡×¤××¨×™",
                 image: UIImage(systemName: "safari"),
                 action: #selector(menuOpenCurrentPageInSafari(_:)),
                 propertyList: "site-open-safari",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "שתף דף נוכחי",
+                title: "×¤×ª×— ×“×£ × ×•×›×—×™ ×‘×¡×¤××¨×™ ×‘×ª×•×š ×”××¤×œ×™×§×¦×™×”",
+                image: UIImage(systemName: "safari"),
+                action: #selector(menuOpenCurrentPageInSafariView(_:)),
+                propertyList: "site-open-safari-view",
+                attributes: pageURL == nil ? [.disabled] : []
+            ),
+            UICommand(
+                title: "×©×ª×£ ×“×£ × ×•×›×—×™",
                 image: UIImage(systemName: "square.and.arrow.up"),
                 action: #selector(menuShareCurrentPage(_:)),
                 propertyList: "site-share-page",
                 attributes: pageURL == nil ? [.disabled] : []
             ),
             UICommand(
-                title: "רענן",
+                title: "×¨×¢× ×Ÿ",
                 image: UIImage(systemName: "arrow.clockwise"),
                 action: #selector(menuReload(_:)),
                 propertyList: "site-reload"
             )
         ]
 
-        return UIMenu(title: "אתר", image: UIImage(systemName: "globe"), identifier: NativeMenuIdentifier.site, children: actions)
+        return UIMenu(title: "××ª×¨", image: UIImage(systemName: "globe"), identifier: NativeMenuIdentifier.site, children: actions)
     }
 
     private func makeHistoryMenu() -> UIMenu {
@@ -429,9 +432,9 @@ final class BrowserViewController: UIViewController {
 
         if recent.isEmpty {
             children.append(UICommand(
-                title: "אין היסטוריה אחרונה",
+                title: "××™×Ÿ ×”×™×¡×˜×•×¨×™×” ××—×¨×•× ×”",
                 action: #selector(menuNoOp(_:)),
-                propertyList: "history-empty",
+                propertyList: "history-empty-\(siteID)",
                 attributes: [.disabled]
             ))
         } else {
@@ -451,21 +454,27 @@ final class BrowserViewController: UIViewController {
 
         children.append(UIMenu(title: "", options: .displayInline, children: [
             UICommand(
-                title: "הצג את כל ההיסטוריה...",
+                title: "×”×¦×’ ××ª ×›×œ ×”×”×™×¡×˜×•×¨×™×”...",
                 image: UIImage(systemName: "clock.arrow.circlepath"),
-                action: #selector(menuShowHistory(_:)),
-                propertyList: "history-show-all"
+                action: #selector(menuShowSiteHistory(_:)),
+                propertyList: "history-show-site-\(siteID)"
             ),
             UICommand(
-                title: "נקה היסטוריה לאתר זה",
+                title: "×”×¦×’ ×”×™×¡×˜×•×¨×™×” ×ž×›×œ ×”××ª×¨×™×...",
+                image: UIImage(systemName: "clock"),
+                action: #selector(menuShowAllHistory(_:)),
+                propertyList: "history-show-all-sites"
+            ),
+            UICommand(
+                title: "× ×§×” ×”×™×¡×˜×•×¨×™×” ×œ××ª×¨ ×–×”",
                 image: UIImage(systemName: "trash"),
                 action: #selector(menuClearSiteHistory(_:)),
-                propertyList: "history-clear-site",
+                propertyList: "history-clear-site-\(siteID)",
                 attributes: recent.isEmpty ? [.disabled] : []
             )
         ]))
 
-        return UIMenu(title: "היסטוריה", image: UIImage(systemName: "clock.arrow.circlepath"), identifier: NativeMenuIdentifier.history, children: children)
+        return UIMenu(title: "×”×™×¡×˜×•×¨×™×”", image: UIImage(systemName: "clock.arrow.circlepath"), identifier: NativeMenuIdentifier.history, children: children)
     }
 
     private func makeBookmarksMenu() -> UIMenu {
@@ -474,7 +483,7 @@ final class BrowserViewController: UIViewController {
 
         var children: [UIMenuElement] = [
             UICommand(
-                title: "הוסף דף נוכחי למועדפים",
+                title: "×”×•×¡×£ ×“×£ × ×•×›×—×™ ×œ×ž×•×¢×“×¤×™×",
                 image: UIImage(systemName: "bookmark"),
                 action: #selector(menuAddBookmark(_:)),
                 propertyList: "bookmarks-add-current",
@@ -485,9 +494,9 @@ final class BrowserViewController: UIViewController {
         if bookmarks.isEmpty {
             children.append(UIMenu(title: "", options: .displayInline, children: [
                 UICommand(
-                    title: "אין מועדפים לאתר זה",
+                    title: "××™×Ÿ ×ž×•×¢×“×¤×™× ×œ××ª×¨ ×–×”",
                     action: #selector(menuNoOp(_:)),
-                    propertyList: "bookmarks-empty",
+                    propertyList: "bookmarks-empty-\(siteID)",
                     attributes: [.disabled]
                 )
             ]))
@@ -506,61 +515,65 @@ final class BrowserViewController: UIViewController {
             }))
         }
 
-        return UIMenu(title: "מועדפים", image: UIImage(systemName: "bookmark"), identifier: NativeMenuIdentifier.bookmarks, children: children)
+
+        children.append(UIMenu(title: "", options: .displayInline, children: [
+            makeBookmarksSubmenu(title: "Show bookmarks for this site...", bookmarks: bookmarks, emptyPropertyList: "bookmarks-show-site-empty-\(siteID)"),
+            makeBookmarksSubmenu(title: "Show all bookmarks...", bookmarks: bookmarkStore.recentItems(forSiteID: nil, limit: 50), emptyPropertyList: "bookmarks-show-all-empty")
+        ]))
+
+        return UIMenu(title: "×ž×•×¢×“×¤×™×", image: UIImage(systemName: "bookmark"), identifier: NativeMenuIdentifier.bookmarks, children: children)
     }
 
-    private func makeAlHaTorahIndexMenu() -> UIMenu {
-        AppLogger.shared.logSync("makeAlHaTorahIndexMenu started")
-        return UIMenu(
-            title: "אינדקס",
-            image: UIImage(systemName: "book"),
-            identifier: NativeMenuIdentifier.siteFeatures,
-            children: [
+    private func makeBookmarksSubmenu(title: String, bookmarks: [BookmarkItem], emptyPropertyList: String) -> UIMenu {
+        let children: [UIMenuElement]
+        if bookmarks.isEmpty {
+            children = [
                 UICommand(
-                    title: "חיפוש באינדקס...",
-                    image: UIImage(systemName: "magnifyingglass"),
-                    action: #selector(menuOpenAlHaTorahIndexSearch(_:)),
-                    propertyList: "index-search"
-                ),
-                UICommand(
-                    title: "עדכון אינדקס",
-                    image: UIImage(systemName: "arrow.triangle.2.circlepath"),
-                    action: #selector(menuRefreshAlHaTorahIndex(_:)),
-                    propertyList: "index-refresh"
-                ),
-                UIMenu(title: "", options: .displayInline, children: [
-                    UICommand(
-                        title: "פתיחת דף הבית",
-                        image: UIImage(systemName: "house"),
-                        action: #selector(menuGoHome(_:)),
-                        propertyList: "index-home"
-                    )
-                ])
+                    title: "No bookmarks",
+                    action: #selector(menuNoOp(_:)),
+                    propertyList: emptyPropertyList,
+                    attributes: [.disabled]
+                )
             ]
-        )
+        } else {
+            children = bookmarks.map { bookmark in
+                UICommand(
+                    title: bookmark.title,
+                    image: UIImage(systemName: "bookmark"),
+                    action: #selector(menuOpenURLCommand(_:)),
+                    propertyList: [
+                        "source": "bookmark",
+                        "id": bookmark.id.uuidString,
+                        "url": bookmark.urlString
+                    ]
+                )
+            }
+        }
+
+        return UIMenu(title: title, image: UIImage(systemName: "bookmark"), children: children)
     }
 
     private func makeWindowsMenu() -> UIMenu {
         AppLogger.shared.logSync("makeWindowsMenu started")
         return UIMenu(
-            title: "חלונות",
+            title: "×—×œ×•× ×•×ª",
             image: UIImage(systemName: "rectangle.on.rectangle"),
             identifier: NativeMenuIdentifier.windows,
             children: [
                 UICommand(
-                    title: "פתח חלון חדש לאתר זה",
+                    title: "×¤×ª×— ×—×œ×•×Ÿ ×—×“×© ×œ××ª×¨ ×–×”",
                     image: UIImage(systemName: "macwindow.badge.plus"),
                     action: #selector(menuOpenSiteInNewWindow(_:)),
                     propertyList: "windows-new-site-window"
                 ),
                 UICommand(
-                    title: "פתח לשונית חדשה",
+                    title: "×¤×ª×— ×œ×©×•× ×™×ª ×—×“×©×”",
                     image: UIImage(systemName: "plus.square.on.square"),
                     action: #selector(menuOpenNewTab(_:)),
                     propertyList: "windows-new-tab"
                 ),
                 UICommand(
-                    title: "הצג לשוניות",
+                    title: "×”×¦×’ ×œ×©×•× ×™×•×ª",
                     image: UIImage(systemName: "square.on.square"),
                     action: #selector(menuShowTabs(_:)),
                     propertyList: "windows-show-tabs"
@@ -572,18 +585,18 @@ final class BrowserViewController: UIViewController {
     private func makeHelpMenu() -> UIMenu {
         AppLogger.shared.logSync("makeHelpMenu started")
         return UIMenu(
-            title: "עזרה",
+            title: "×¢×–×¨×”",
             image: UIImage(systemName: "questionmark.circle"),
             identifier: NativeMenuIdentifier.help,
             children: [
                 UICommand(
-                    title: "העתק מיקום קובץ לוג",
+                    title: "×”×¢×ª×§ ×ž×™×§×•× ×§×•×‘×¥ ×œ×•×’",
                     image: UIImage(systemName: "doc.on.doc"),
                     action: #selector(menuCopyLogFilePath(_:)),
                     propertyList: "help-copy-log-path"
                 ),
                 UICommand(
-                    title: "נקה לוג אבחון",
+                    title: "× ×§×” ×œ×•×’ ××‘×—×•×Ÿ",
                     image: UIImage(systemName: "trash"),
                     action: #selector(menuClearDiagnosticLog(_:)),
                     propertyList: "help-clear-log"
@@ -701,8 +714,17 @@ final class BrowserViewController: UIViewController {
         present(controller, animated: true)
     }
 
+    @objc private func openCurrentPageInSafariView() {
+        guard let url = currentPageURL else { return }
+        presentSafariView(for: url)
+    }
+
     @objc private func showHistory() {
-        let controller = HistoryViewController(historyStore: historyStore, siteID: siteID, siteName: currentSite.name)
+        showHistory(siteID: siteID, siteName: currentSite.name)
+    }
+
+    private func showHistory(siteID: String?, siteName: String?) {
+        let controller = HistoryViewController(historyStore: historyStore, siteID: siteID, siteName: siteName)
         controller.delegate = self
 
         let navigation = UINavigationController(rootViewController: controller)
@@ -746,15 +768,19 @@ final class BrowserViewController: UIViewController {
         openURLInSiteWindow(currentSite.homeURL, siteID: siteID)
     }
 
-    @objc private func menuShowHistory(_ command: UICommand) {
-        showHistory()
+    @objc private func menuShowSiteHistory(_ command: UICommand) {
+        showHistory(siteID: siteID, siteName: currentSite.name)
+    }
+
+    @objc private func menuShowAllHistory(_ command: UICommand) {
+        showHistory(siteID: nil, siteName: nil)
     }
 
     @objc private func menuClearSiteHistory(_ command: UICommand) {
         AppLogger.shared.log("menuClearSiteHistory siteID=\(siteID)")
         historyStore.clear(siteID: siteID)
         rebuildMainMenu()
-        showMessage("ההיסטוריה נוקתה", message: currentSite.name)
+        showMessage("×”×”×™×¡×˜×•×¨×™×” × ×•×§×ª×”", message: currentSite.name)
     }
 
     @objc private func menuAddBookmark(_ command: UICommand) {
@@ -769,6 +795,10 @@ final class BrowserViewController: UIViewController {
     @objc private func menuOpenCurrentPageInSafari(_ command: UICommand) {
         guard let url = currentPageURL else { return }
         openSystemURL(url)
+    }
+
+    @objc private func menuOpenCurrentPageInSafariView(_ command: UICommand) {
+        openCurrentPageInSafariView()
     }
 
     @objc private func menuShareCurrentPage(_ command: UICommand) {
@@ -796,14 +826,6 @@ final class BrowserViewController: UIViewController {
         }
     }
 
-    @objc private func menuOpenAlHaTorahIndexSearch(_ command: UICommand) {
-        openAlHaTorahIndexSearch()
-    }
-
-    @objc private func menuRefreshAlHaTorahIndex(_ command: UICommand) {
-        refreshAlHaTorahIndex()
-    }
-
     @objc private func menuOpenNewTab(_ command: UICommand) {
         AppLogger.shared.log("menuOpenNewTab siteID=\(siteID)")
         openIncomingURLInNewTab(currentSite.homeURL)
@@ -817,12 +839,12 @@ final class BrowserViewController: UIViewController {
         let path = AppLogger.shared.logFileURL.path
         UIPasteboard.general.string = path
         AppLogger.shared.log("menuCopyLogFilePath path=\(path)")
-        showMessage("מיקום קובץ הלוג הועתק", message: path)
+        showMessage("×ž×™×§×•× ×§×•×‘×¥ ×”×œ×•×’ ×”×•×¢×ª×§", message: path)
     }
 
     @objc private func menuClearDiagnosticLog(_ command: UICommand) {
         AppLogger.shared.clear()
-        showMessage("לוג האבחון נוקה")
+        showMessage("×œ×•×’ ×”××‘×—×•×Ÿ × ×•×§×”")
     }
 
     @objc private func menuNoOp(_ command: UICommand) {}
@@ -977,181 +999,10 @@ extension BrowserViewController: TabStoreDelegate {
     }
 }
 
-extension BrowserViewController {
-    func openAlHaTorahIndexSearch() {
-        guard currentSite.id == SiteProfile.alHaTorahID else { return }
-
-        guard let bundle = RefPHPStore.shared.readCachedBundle(), !bundle.booksIndex.isEmpty else {
-            let alert = UIAlertController(
-                title: "AlHaTorah Index",
-                message: "The local index is not ready yet. Update the Spotlight index first, then try again.",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            alert.addAction(UIAlertAction(title: "Update Index", style: .default) { [weak self] _ in
-                self?.refreshAlHaTorahIndex()
-            })
-            present(alert, animated: true)
-            return
-        }
-
-        let controller = AlHaTorahIndexSearchViewController(items: bundle.booksIndex)
-        controller.onSelect = { [weak self] item in
-            self?.openAlHaTorahIndexItem(item)
-        }
-
-        let navigation = UINavigationController(rootViewController: controller)
-        navigation.modalPresentationStyle = .formSheet
-        navigation.preferredContentSize = CGSize(width: 560, height: 720)
-        present(navigation, animated: true)
-    }
-
-    func refreshAlHaTorahIndex() {
-        let progress = UIAlertController(title: "AlHaTorah Index", message: "Updating the local index...", preferredStyle: .alert)
-        progress.addAction(UIAlertAction(title: "Keep Running", style: .cancel))
-        present(progress, animated: true)
-
-        SpotlightIndexManager.shared.refreshIfNeeded(force: false) { [weak self] result in
-            DispatchQueue.main.async {
-                let finish: () -> Void = {
-                    switch result {
-                    case .success(let summary):
-                        self?.showMessage("AlHaTorah Index Updated", message: "Books: \(summary.itemCount)\nIndexed now: \(summary.indexedCount)")
-                    case .failure(let error):
-                        self?.showMessage("Index Update Failed", message: error.localizedDescription)
-                    }
-                }
-
-                if progress.presentingViewController != nil {
-                    progress.dismiss(animated: true, completion: finish)
-                } else {
-                    finish()
-                }
-            }
-        }
-    }
-
-    private func openAlHaTorahIndexItem(_ item: BookIndexItem) {
-        let identifier = SpotlightIndexManager.shared.spotlightIdentifier(for: item.id)
-        SpotlightIndexManager.shared.urlForSpotlightIdentifier(identifier) { [weak self] url in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                if let url {
-                    self.openIncomingURL(url, preferredSiteID: SiteProfile.alHaTorahID, forceNewWindow: false)
-                } else {
-                    self.showMessage("Could Not Open Reference", message: item.titleEn.isEmpty ? item.id : item.titleEn)
-                }
-            }
-        }
-    }
-}
-
 private enum NativeMenuIdentifier {
     static let site = UIMenu.Identifier("native.site.menu")
     static let history = UIMenu.Identifier("native.history.menu")
     static let bookmarks = UIMenu.Identifier("native.bookmarks.menu")
-    static let siteFeatures = UIMenu.Identifier("native.site.features.menu")
     static let windows = UIMenu.Identifier("native.windows.menu")
     static let help = UIMenu.Identifier("native.help.menu")
-}
-
-private final class AlHaTorahIndexSearchViewController: UITableViewController, UISearchResultsUpdating {
-    var onSelect: ((BookIndexItem) -> Void)?
-
-    private let allItems: [BookIndexItem]
-    private var filteredItems: [BookIndexItem]
-    private let searchController = UISearchController(searchResultsController: nil)
-    private let reuseIdentifier = "AlHaTorahIndexSearchCell"
-
-    init(items: [BookIndexItem]) {
-        self.allItems = items
-        self.filteredItems = Array(items.prefix(100))
-        super.init(style: .insetGrouped)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        title = "Search Index"
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
-
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "Search AlHaTorah index"
-        navigationItem.searchController = searchController
-        definesPresentationContext = true
-    }
-
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        1
-    }
-
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        filteredItems.count
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let item = filteredItems[indexPath.row]
-        let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
-        var content = cell.defaultContentConfiguration()
-        content.text = primaryTitle(for: item)
-        content.secondaryText = secondaryTitle(for: item)
-        content.image = UIImage(systemName: "book")
-        content.textProperties.numberOfLines = 1
-        content.secondaryTextProperties.numberOfLines = 2
-        cell.contentConfiguration = content
-        cell.accessoryType = .disclosureIndicator
-        return cell
-    }
-
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        let item = filteredItems[indexPath.row]
-        dismiss(animated: true) { [onSelect] in
-            onSelect?(item)
-        }
-    }
-
-    func updateSearchResults(for searchController: UISearchController) {
-        let query = (searchController.searchBar.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else {
-            filteredItems = Array(allItems.prefix(100))
-            tableView.reloadData()
-            return
-        }
-
-        filteredItems = Array(allItems.lazy.filter { item in
-            self.searchableText(for: item).contains(query)
-        }.prefix(100))
-        tableView.reloadData()
-    }
-
-    private func primaryTitle(for item: BookIndexItem) -> String {
-        if AppLocalization.isHebrew {
-            return item.titleHe.isEmpty ? item.titleEn : item.titleHe
-        }
-        return item.titleEn.isEmpty ? item.titleHe : item.titleEn
-    }
-
-    private func secondaryTitle(for item: BookIndexItem) -> String {
-        var parts = [item.id]
-        if !item.titleHe.isEmpty, item.titleHe != primaryTitle(for: item) { parts.append(item.titleHe) }
-        if !item.titleEn.isEmpty, item.titleEn != primaryTitle(for: item) { parts.append(item.titleEn) }
-        if !item.sectionNames.isEmpty { parts.append(item.sectionNames.prefix(3).joined(separator: " / ")) }
-        return parts.filter { !$0.isEmpty }.joined(separator: " • ")
-    }
-
-    private func searchableText(for item: BookIndexItem) -> String {
-        ([item.id, item.titleHe, item.titleEn, item.searchableText] + item.aliases + item.categoryTitles + item.sectionNames)
-            .joined(separator: " ")
-            .lowercased()
-    }
-
-    @objc private func done() {
-        dismiss(animated: true)
-    }
 }

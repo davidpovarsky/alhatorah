@@ -5,9 +5,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         AppCrashReporter.install()
         AppLogger.shared.logSync("Application did finish launching; documentsLog=\(AppLogger.shared.logFileURL.path)")
-        SpotlightBackgroundScheduler.shared.register()
-        AppLogger.shared.log("Scheduling Spotlight refresh from launch")
-        SpotlightBackgroundScheduler.shared.schedule()
         AppShortcutManager.updateQuickActions(settings: SettingsStore().settings)
         return true
     }
@@ -18,8 +15,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        AppLogger.shared.log("Application entered background; scheduling Spotlight refresh")
-        SpotlightBackgroundScheduler.shared.schedule()
+        AppLogger.shared.log("Application entered background")
     }
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {

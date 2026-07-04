@@ -20,7 +20,7 @@ final class AppLogger {
 
     var legacyLogFileURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let directory = base.appendingPathComponent("AlHaTorah", isDirectory: true)
+        let directory = base.appendingPathComponent("NativeSiteApp", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory.appendingPathComponent("diagnostic-log.txt")
     }

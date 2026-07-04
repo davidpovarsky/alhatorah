@@ -1,4 +1,3 @@
-import CoreSpotlight
 import UIKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -45,14 +44,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             if let activity = connectionOptions.userActivities.first {
                 handleUserActivity(activity)
             }
-        } else {
-            for activity in connectionOptions.userActivities where activity.activityType == CSSearchableItemActionType {
-                handleUserActivity(activity)
-            }
         }
 
-        SpotlightIndexManager.shared.refreshIfNeeded(force: false)
-        SpotlightBackgroundScheduler.shared.schedule()
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
@@ -74,7 +67,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
-        SpotlightBackgroundScheduler.shared.schedule()
+        AppLogger.shared.log("Scene entered background")
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
@@ -113,17 +106,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func handleUserActivity(_ activity: NSUserActivity) {
-        if activity.activityType == CSSearchableItemActionType,
-           let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
-            SpotlightIndexManager.shared.urlForSpotlightIdentifier(identifier) { [weak self] url in
-                DispatchQueue.main.async {
-                    guard let url else { return }
-                    self?.browserViewController?.openIncomingURLInNewTab(url)
-                }
-            }
-            return
-        }
-
         guard let request = SceneLaunchRequest.from(userActivity: activity),
               let settings = settingsStore?.settings else { return }
 

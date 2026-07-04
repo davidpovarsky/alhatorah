@@ -128,11 +128,12 @@ final class BookmarkStore {
         items.removeAll { $0.id == id }
     }
 
-    func items(forSiteID siteID: String) -> [BookmarkItem] {
-        items.filter { $0.siteID == siteID }
+    func items(forSiteID siteID: String?) -> [BookmarkItem] {
+        guard let siteID else { return items }
+        return items.filter { $0.siteID == siteID }
     }
 
-    func recentItems(forSiteID siteID: String, limit: Int) -> [BookmarkItem] {
+    func recentItems(forSiteID siteID: String?, limit: Int) -> [BookmarkItem] {
         uniqueByURL(items(forSiteID: siteID), limit: limit)
     }
 

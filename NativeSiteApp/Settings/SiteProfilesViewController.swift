@@ -195,7 +195,7 @@ private final class SiteProfileEditorViewController: UITableViewController {
             cell.configure(
                 title: AppLocalization.text("settings.sites.name", "Name"),
                 text: site.name,
-                placeholder: "AlHaTorah",
+                placeholder: "My Site",
                 keyboardType: .default
             ) { [weak self] text in
                 self?.updateSite { $0.name = text }

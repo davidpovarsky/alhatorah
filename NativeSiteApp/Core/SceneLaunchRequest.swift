@@ -200,7 +200,7 @@ enum AppShortcutManager {
     }
 
     private static func shortcutItem(for profile: SiteProfile, isDefault: Bool) -> UIApplicationShortcutItem {
-        let iconName = profile.id == SiteProfile.alHaTorahID ? "book" : "globe"
+        let iconName = "globe"
         let icon = UIApplicationShortcutIcon(systemImageName: iconName)
         var userInfo: [String: NSSecureCoding] = [
             SceneLaunchRequest.siteIDKey: profile.id as NSString,

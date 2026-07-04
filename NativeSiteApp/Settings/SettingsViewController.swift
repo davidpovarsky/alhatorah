@@ -5,7 +5,6 @@ final class SettingsViewController: UITableViewController {
     private enum Section: Int, CaseIterable {
         case sites
         case behavior
-        case spotlight
         case data
         case links
         case about
@@ -20,12 +19,6 @@ final class SettingsViewController: UITableViewController {
         case externalLinks
         case toolbarAutoHide
         case desktopMode
-    }
-
-    private enum SpotlightRow: Int, CaseIterable {
-        case updateIndex
-        case deleteIndex
-        case shareDiagnosticLog
     }
 
     private enum DataRow: Int, CaseIterable {
@@ -75,7 +68,6 @@ final class SettingsViewController: UITableViewController {
         switch Section(rawValue: section) {
         case .sites: return AppLocalization.text("settings.section.sites", "Sites")
         case .behavior: return AppLocalization.text("settings.section.behavior", "Behavior")
-        case .spotlight: return AppLocalization.text("settings.section.spotlight", "Spotlight")
         case .data: return AppLocalization.text("settings.section.data", "Data")
         case .links: return AppLocalization.text("settings.section.links", "Deep Links")
         case .about: return AppLocalization.text("settings.section.about", "About")
@@ -89,8 +81,6 @@ final class SettingsViewController: UITableViewController {
             return AppLocalization.text("settings.footer.sites", "Add multiple website profiles. Each profile has its own home URL and allowed domains. On iPad, configured sites can open in their own app window.")
         case .behavior:
             return AppLocalization.text("settings.footer.behavior", "External website links open in a native Safari view inside this app when enabled. Configured website links can open as separate iPad windows.")
-        case .spotlight:
-            return AppLocalization.text("settings.footer.spotlight", "Downloads ref.php at most once a week, builds the AlHaTorah book index locally, and updates iOS Spotlight in the background.")
         case .links:
             return AppLocalization.text("settings.footer.links", "The custom URL scheme works for any configured site. Universal Links require control of the website domain and Apple Associated Domains.")
         default:
@@ -102,7 +92,6 @@ final class SettingsViewController: UITableViewController {
         switch Section(rawValue: section) {
         case .sites: return SitesRow.allCases.count
         case .behavior: return BehaviorRow.allCases.count
-        case .spotlight: return SpotlightRow.allCases.count
         case .data: return DataRow.allCases.count
         case .links: return LinksRow.allCases.count
         case .about: return 1
@@ -120,10 +109,6 @@ final class SettingsViewController: UITableViewController {
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
             configureBehavior(cell, row: BehaviorRow(rawValue: indexPath.row))
             return cell
-        case .spotlight:
-            let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-            configureSpotlight(cell, row: SpotlightRow(rawValue: indexPath.row))
-            return cell
         case .data:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
             configureData(cell, row: DataRow(rawValue: indexPath.row))
@@ -134,7 +119,7 @@ final class SettingsViewController: UITableViewController {
             return cell
         case .about:
             let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-            cell.textLabel?.text = AppLocalization.text("settings.about.title", "AlHaTorah")
+            cell.textLabel?.text = AppLocalization.text("settings.about.title", "Native Site App")
             cell.detailTextLabel?.text = AppLocalization.text("settings.about.detail", "Native UIKit multi-site browser with WKWebView windows")
             cell.selectionStyle = .none
             return cell
@@ -186,27 +171,6 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
-    private func configureSpotlight(_ cell: UITableViewCell, row: SpotlightRow?) {
-        cell.accessoryType = .disclosureIndicator
-
-        switch row {
-        case .updateIndex:
-            cell.textLabel?.text = AppLocalization.text("settings.spotlight.update_index", "Update Spotlight Index")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.update_index_detail", "Download ref.php if needed, rebuild the book index, and index books.")
-
-        case .deleteIndex:
-            cell.textLabel?.text = AppLocalization.text("settings.spotlight.delete_index", "Delete Spotlight Index")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.delete_index_detail", "Remove AlHaTorah books from iOS Spotlight.")
-
-        case .shareDiagnosticLog:
-            cell.textLabel?.text = AppLocalization.text("settings.spotlight.share_log", "Share Diagnostic Log")
-            cell.detailTextLabel?.text = AppLocalization.text("settings.spotlight.share_log_detail", "Export the app log file for debugging.")
-
-        case .none:
-            break
-        }
-    }
-
     private func configureData(_ cell: UITableViewCell, row: DataRow?) {
         cell.accessoryType = .disclosureIndicator
 
@@ -251,8 +215,6 @@ final class SettingsViewController: UITableViewController {
         switch Section(rawValue: indexPath.section) {
         case .sites:
             handleSites(row: SitesRow(rawValue: indexPath.row))
-        case .spotlight:
-            handleSpotlight(row: SpotlightRow(rawValue: indexPath.row))
         case .data:
             handleData(row: DataRow(rawValue: indexPath.row))
         case .links:
@@ -269,90 +231,6 @@ final class SettingsViewController: UITableViewController {
             navigationController?.pushViewController(controller, animated: true)
         case .none:
             break
-        }
-    }
-
-    private func handleSpotlight(row: SpotlightRow?) {
-        switch row {
-        case .updateIndex:
-            runSpotlightRefresh(force: false)
-        case .deleteIndex:
-            deleteSpotlightIndex()
-        case .shareDiagnosticLog:
-            shareDiagnosticLog()
-        case .none:
-            break
-        }
-    }
-
-    private func runSpotlightRefresh(force: Bool) {
-        AppLogger.shared.log("Manual Spotlight refresh requested; force=\(force)")
-        let progress = UIAlertController(
-            title: AppLocalization.text("settings.spotlight.progress_title", "Spotlight"),
-            message: AppLocalization.text("settings.spotlight.progress_message", "Updating the AlHaTorah book index. The first build can take a few minutes. You can dismiss this and export the diagnostic log from Settings."),
-            preferredStyle: .alert
-        )
-        progress.addAction(UIAlertAction(title: AppLocalization.text("settings.spotlight.keep_running", "Keep Running"), style: .cancel) { _ in
-            AppLogger.shared.log("Spotlight progress dialog dismissed; refresh continues")
-        })
-        present(progress, animated: true)
-
-        SpotlightIndexManager.shared.refreshIfNeeded(force: force) { [weak self] result in
-            DispatchQueue.main.async {
-                let finish = {
-                    switch result {
-                    case .success(let summary):
-                        AppLogger.shared.log("Manual Spotlight refresh succeeded; items=\(summary.itemCount), indexed=\(summary.indexedCount), skipped=\(summary.skipped), source=\(summary.source.rawValue)")
-                        let title = self?.spotlightResultTitle(for: summary) ?? AppLocalization.text("settings.spotlight.updated", "Spotlight updated")
-                        let message = self?.spotlightResultMessage(for: summary)
-                        self?.showMessage(title, message: message)
-                    case .failure(let error):
-                        AppLogger.shared.log("Manual Spotlight refresh failed: \(error.localizedDescription)")
-                        self?.showMessage(AppLocalization.text("settings.spotlight.failed", "Spotlight update failed"), message: error.localizedDescription)
-                    }
-                }
-
-                if progress.presentingViewController != nil {
-                    progress.dismiss(animated: true, completion: finish)
-                } else {
-                    finish()
-                }
-            }
-        }
-    }
-
-    private func spotlightResultTitle(for summary: SpotlightRefreshSummary) -> String {
-        if summary.signature == "in-progress" {
-            return AppLocalization.text("settings.spotlight.in_progress", "Spotlight indexing is already in progress")
-        }
-        return summary.skipped
-            ? AppLocalization.text("settings.spotlight.already_updated", "Spotlight already updated")
-            : AppLocalization.text("settings.spotlight.updated", "Spotlight updated")
-    }
-
-    private func spotlightResultMessage(for summary: SpotlightRefreshSummary) -> String {
-        if summary.signature == "in-progress" {
-            return AppLocalization.text("settings.spotlight.in_progress_message", "Another indexing run is already working. Please wait for it to finish.")
-        }
-        let template = AppLocalization.text("settings.spotlight.result_message", "Books: %@\nIndexed now: %@\nSource: %@")
-        return String(format: template, "\(summary.itemCount)", "\(summary.indexedCount)", summary.source.rawValue)
-    }
-
-    private func deleteSpotlightIndex() {
-        confirm(title: AppLocalization.text("settings.spotlight.delete_index", "Delete Spotlight Index"), message: AppLocalization.text("settings.spotlight.delete_confirm", "Remove AlHaTorah books from iOS Spotlight?"), actionTitle: AppLocalization.text("common.delete", "Delete")) { [weak self] in
-            AppLogger.shared.log("Manual Spotlight delete requested")
-            SpotlightIndexManager.shared.deleteAllSpotlightItems { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        AppLogger.shared.log("Manual Spotlight delete succeeded")
-                        self?.showMessage(AppLocalization.text("settings.spotlight.deleted", "Spotlight index deleted"))
-                    case .failure(let error):
-                        AppLogger.shared.log("Manual Spotlight delete failed: \(error.localizedDescription)")
-                        self?.showMessage(AppLocalization.text("settings.spotlight.delete_failed", "Could not delete Spotlight index"), message: error.localizedDescription)
-                    }
-                }
-            }
         }
     }
 

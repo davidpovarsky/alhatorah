@@ -8,12 +8,12 @@ struct AppSettings: Codable, Equatable {
     var hideToolbarOnScroll: Bool
     var preferDesktopUserAgent: Bool
 
-    static let defaultHomeURLString = SiteProfile.alHaTorahDefault.homeURLString
+    static let defaultHomeURLString = SiteProfile.genericDefault.homeURLString
 
     static var defaults: AppSettings {
         AppSettings(
-            siteProfiles: [.alHaTorahDefault],
-            defaultSiteID: SiteProfile.alHaTorahID,
+            siteProfiles: [.genericDefault],
+            defaultSiteID: SiteProfile.genericDefault.id,
             openConfiguredSitesInNewWindows: true,
             openExternalLinksInSafariView: true,
             hideToolbarOnScroll: true,
@@ -55,14 +55,14 @@ struct AppSettings: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         let legacyHomeURLString = try container.decodeIfPresent(String.self, forKey: .homeURLString) ?? Self.defaultHomeURLString
-        let legacyAllowedDomains = try container.decodeIfPresent([String].self, forKey: .allowedDomains) ?? SiteProfile.alHaTorahDefault.allowedDomains
+        let legacyAllowedDomains = try container.decodeIfPresent([String].self, forKey: .allowedDomains) ?? SiteProfile.genericDefault.allowedDomains
 
         let decodedProfiles = try container.decodeIfPresent([SiteProfile].self, forKey: .siteProfiles)
         siteProfiles = decodedProfiles?.isEmpty == false
             ? decodedProfiles!
-            : [SiteProfile(id: SiteProfile.alHaTorahID, name: "AlHaTorah", homeURLString: legacyHomeURLString, allowedDomains: legacyAllowedDomains)]
+            : [SiteProfile(id: SiteProfile.genericDefault.id, name: SiteProfile.genericDefault.name, homeURLString: legacyHomeURLString, allowedDomains: legacyAllowedDomains)]
 
-        defaultSiteID = try container.decodeIfPresent(String.self, forKey: .defaultSiteID) ?? siteProfiles.first?.id ?? SiteProfile.alHaTorahID
+        defaultSiteID = try container.decodeIfPresent(String.self, forKey: .defaultSiteID) ?? siteProfiles.first?.id ?? SiteProfile.genericDefault.id
         openConfiguredSitesInNewWindows = try container.decodeIfPresent(Bool.self, forKey: .openConfiguredSitesInNewWindows) ?? true
         openExternalLinksInSafariView = try container.decodeIfPresent(Bool.self, forKey: .openExternalLinksInSafariView) ?? true
         hideToolbarOnScroll = try container.decodeIfPresent(Bool.self, forKey: .hideToolbarOnScroll) ?? true
@@ -86,7 +86,7 @@ struct AppSettings: Codable, Equatable {
     }
 
     var defaultSite: SiteProfile {
-        siteProfile(withID: defaultSiteID) ?? siteProfiles.first ?? .alHaTorahDefault
+        siteProfile(withID: defaultSiteID) ?? siteProfiles.first ?? .genericDefault
     }
 
     var homeURLString: String {
@@ -136,7 +136,7 @@ struct AppSettings: Codable, Equatable {
         guard siteProfiles.count > 1 else { return }
         siteProfiles.removeAll { $0.id == id }
         if defaultSiteID == id {
-            defaultSiteID = siteProfiles.first?.id ?? SiteProfile.alHaTorahID
+            defaultSiteID = siteProfiles.first?.id ?? SiteProfile.genericDefault.id
         }
         normalize()
     }
@@ -155,7 +155,7 @@ struct AppSettings: Codable, Equatable {
             mutate(&siteProfiles[0])
             defaultSiteID = siteProfiles[0].id
         } else {
-            var site = SiteProfile.alHaTorahDefault
+            var site = SiteProfile.genericDefault
             mutate(&site)
             siteProfiles = [site]
             defaultSiteID = site.id
@@ -165,7 +165,7 @@ struct AppSettings: Codable, Equatable {
 
     mutating func normalize() {
         if siteProfiles.isEmpty {
-            siteProfiles = [.alHaTorahDefault]
+            siteProfiles = [.genericDefault]
         }
 
         siteProfiles = siteProfiles.map { profile in
@@ -178,7 +178,7 @@ struct AppSettings: Codable, Equatable {
         siteProfiles = siteProfiles.filter { seen.insert($0.id).inserted }
 
         if !siteProfiles.contains(where: { $0.id == defaultSiteID }) {
-            defaultSiteID = siteProfiles.first?.id ?? SiteProfile.alHaTorahID
+            defaultSiteID = siteProfiles.first?.id ?? SiteProfile.genericDefault.id
         }
     }
 }

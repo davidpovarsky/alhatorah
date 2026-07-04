@@ -1,8 +1,6 @@
 import Foundation
 
 struct SiteProfile: Codable, Identifiable, Equatable {
-    static let alHaTorahID = "alhatorah"
-
     let id: String
     var name: String
     var homeURLString: String
@@ -15,17 +13,17 @@ struct SiteProfile: Codable, Identifiable, Equatable {
         self.allowedDomains = allowedDomains
     }
 
-    static var alHaTorahDefault: SiteProfile {
+    static var genericDefault: SiteProfile {
         SiteProfile(
-            id: alHaTorahID,
-            name: "AlHaTorah",
-            homeURLString: "https://alhatorah.org/",
-            allowedDomains: ["alhatorah.org"]
+            id: "default-site",
+            name: "Default Site",
+            homeURLString: "https://example.com/",
+            allowedDomains: ["example.com"]
         )
     }
 
     var homeURL: URL {
-        URL(string: homeURLString) ?? URL(string: Self.alHaTorahDefault.homeURLString)!
+        URL(string: homeURLString) ?? URL(string: Self.genericDefault.homeURLString)!
     }
 
     var displayHost: String {
@@ -52,7 +50,7 @@ struct SiteProfile: Codable, Identifiable, Equatable {
 
         homeURLString = homeURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         if homeURLString.isEmpty {
-            homeURLString = Self.alHaTorahDefault.homeURLString
+            homeURLString = Self.genericDefault.homeURLString
         }
 
         let normalizedDomains = allowedDomains
@@ -68,7 +66,7 @@ struct SiteProfile: Codable, Identifiable, Equatable {
         }
 
         if allowedDomains.isEmpty {
-            allowedDomains = Self.alHaTorahDefault.allowedDomains
+            allowedDomains = Self.genericDefault.allowedDomains
         }
     }
 }
