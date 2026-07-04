@@ -444,7 +444,7 @@ final class BrowserViewController: UIViewController {
                     image: UIImage(systemName: "clock"),
                     action: #selector(menuOpenURLCommand(_:)),
                     propertyList: [
-                        "source": "history",
+                        "source": "history-recent",
                         "id": item.id.uuidString,
                         "url": item.urlString
                     ]
@@ -507,7 +507,7 @@ final class BrowserViewController: UIViewController {
                     image: UIImage(systemName: "bookmark"),
                     action: #selector(menuOpenURLCommand(_:)),
                     propertyList: [
-                        "source": "bookmark",
+                        "source": "bookmark-recent",
                         "id": bookmark.id.uuidString,
                         "url": bookmark.urlString
                     ]
@@ -517,14 +517,14 @@ final class BrowserViewController: UIViewController {
 
 
         children.append(UIMenu(title: "", options: .displayInline, children: [
-            makeBookmarksSubmenu(title: "הצג מועדפים של אתר זה...", bookmarks: bookmarks, emptyPropertyList: "bookmarks-show-site-empty-\(siteID)"),
-            makeBookmarksSubmenu(title: "הצג כל המועדפים...", bookmarks: bookmarkStore.recentItems(forSiteID: nil, limit: 50), emptyPropertyList: "bookmarks-show-all-empty")
+            makeBookmarksSubmenu(title: "הצג מועדפים של אתר זה...", bookmarks: bookmarks, source: "bookmark-site-submenu", emptyPropertyList: "bookmarks-show-site-empty-\(siteID)"),
+            makeBookmarksSubmenu(title: "הצג כל המועדפים...", bookmarks: bookmarkStore.recentItems(forSiteID: nil, limit: 50), source: "bookmark-all-submenu", emptyPropertyList: "bookmarks-show-all-empty")
         ]))
 
         return UIMenu(title: "מועדפים", image: UIImage(systemName: "bookmark"), identifier: NativeMenuIdentifier.bookmarks, children: children)
     }
 
-    private func makeBookmarksSubmenu(title: String, bookmarks: [BookmarkItem], emptyPropertyList: String) -> UIMenu {
+    private func makeBookmarksSubmenu(title: String, bookmarks: [BookmarkItem], source: String, emptyPropertyList: String) -> UIMenu {
         let children: [UIMenuElement]
         if bookmarks.isEmpty {
             children = [
@@ -542,7 +542,7 @@ final class BrowserViewController: UIViewController {
                     image: UIImage(systemName: "bookmark"),
                     action: #selector(menuOpenURLCommand(_:)),
                     propertyList: [
-                        "source": "bookmark",
+                        "source": source,
                         "id": bookmark.id.uuidString,
                         "url": bookmark.urlString
                     ]
