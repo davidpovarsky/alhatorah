@@ -14,10 +14,8 @@ final class AppLogger {
     }
 
     var logFileURL: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let directory = base.appendingPathComponent("AlHaTorah", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory.appendingPathComponent("diagnostic-log.txt")
+        let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return directory.appendingPathComponent("alhatorah-diagnostic-log.txt")
     }
 
     func log(_ message: String, file: String = #fileID, function: String = #function, line: Int = #line) {
