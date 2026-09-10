@@ -1,16 +1,16 @@
 import SwiftUI
 import WebKit
 
-public struct ActiveTextSelection: Equatable {
-    public let text: String
-    public let begin: Int
-    public let end: Int
-    public let parshan: String
-    public let paragraph: Int?
-    public let location: AlHaTorahLocation
+struct ActiveTextSelection: Equatable {
+    let text: String
+    let begin: Int
+    let end: Int
+    let parshan: String
+    let paragraph: Int?
+    let location: AlHaTorahLocation
 }
 
-public struct ReaderTabView: View {
+struct ReaderTabView: View {
     @ObservedObject var coordinator: AppCoordinator = .shared
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
@@ -30,15 +30,15 @@ public struct ReaderTabView: View {
     // Reference to underlying browser for actions
     @State private var browserBridge = BrowserBridge()
 
-    public init() {}
+    init() {}
 
     private var isCurrentLocationBookmarked: Bool {
         guard let loc = currentLocation else { return false }
         return dataStore.isBookmarked(location: loc)
     }
 
-    public var body: some View {
-        NavigationStack {
+    var body: some View {
+        NavigationView {
             ZStack(alignment: .bottom) {
                 ReaderWebViewRepresentable(
                     bridge: browserBridge,
@@ -178,6 +178,7 @@ public struct ReaderTabView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
     }
 
     private func applyHighlight(color: AlHaTorahPaletteColor, selection: ActiveTextSelection) {

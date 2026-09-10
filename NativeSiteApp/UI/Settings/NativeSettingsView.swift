@@ -1,7 +1,7 @@
 import SwiftUI
 import WebKit
 
-public struct NativeSettingsView: View {
+struct NativeSettingsView: View {
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
@@ -19,197 +19,22 @@ public struct NativeSettingsView: View {
     @State private var showingLogOutAlert = false
     @State private var statusToast: String?
 
-    public init(settingsStore: SettingsStore = SettingsStore()) {
+    init(settingsStore: SettingsStore = SettingsStore()) {
         self.settingsStore = settingsStore
         _homeURLString = State(initialValue: settingsStore.settings.homeURLString)
         _allowedDomainsString = State(initialValue: settingsStore.settings.allowedDomains.joined(separator: "\n"))
     }
 
-    public var body: some View {
-        NavigationStack {
+    var body: some View {
+        NavigationView {
             Form {
-                // Section: AlHaTorah Account
-                Section(header: Text(AppLocalization.text("settings.section.account", "חשבון על־התורה")),
-                        footer: Text(AppLocalization.text("settings.footer.account", "ההתחברות מתבצעת דרך קורא על־התורה ומסנכרנת אוטומטית סימניות, הערות, הדגשות והיסטוריה."))) {
-                    HStack {
-                        Image(systemName: sessionStore.isLoggedIn ? "person.crop.circle.fill.badge.checkmark" : "person.crop.circle")
-                            .foregroundColor(sessionStore.isLoggedIn ? .green : .secondary)
-                            .font(.title2)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(sessionStore.isLoggedIn ? (sessionStore.userEmail ?? "מחובר") : AppLocalization.text("settings.account.not_logged_in", "לא מחובר"))
-                                .font(.headline)
-                            Text(sessionStore.isLoggedIn
-                                 ? AppLocalization.text("settings.account.status_connected", "מחובר ל־users.alhatorah.org")
-                                 : AppLocalization.text("settings.account.status_disconnected", "התחבר כדי לגשת לסימניות ולהערות שלך"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    if sessionStore.isLoggedIn {
-                        Button {
-                            Task {
-                                await dataStore.syncAll()
-                                showToast(AppLocalization.text("settings.account.synced", "הנתונים סונכרנו בהצלחה"))
-                            }
-                        } label: {
-                            Label(AppLocalization.text("settings.account.sync_now", "סנכרן נתונים עכשיו"), systemImage: "arrow.triangle.2.circlepath")
-                        }
-
-                        Button(role: .destructive) {
-                            showingLogOutAlert = true
-                        } label: {
-                            Label(AppLocalization.text("settings.account.logout", "התנתק"), systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } else {
-                        Button {
-                            if let loginURL = URL(string: "https://users.alhatorah.org/login") {
-                                coordinator.openInReader(url: loginURL)
-                            }
-                        } label: {
-                            Label(AppLocalization.text("settings.account.login_via_reader", "התחבר דרך הקורא"), systemImage: "arrow.up.right.square")
-                        }
-                    }
-                }
-
-                // Section: Website
-                Section(header: Text(AppLocalization.text("settings.section.website", "אתר")),
-                        footer: Text(AppLocalization.text("settings.footer.website", "עריכת דף הבית והדומיינים המורשים. דומיין אחד בכל שורה."))) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(AppLocalization.text("settings.website.home_url", "כתובת דף הבית"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        TextField("https://alhatorah.org/", text: $homeURLString)
-                            .keyboardType(.URL)
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
-                            .onChange(of: homeURLString) { newValue in
-                                let cleaned = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                                settingsStore.update {
-                                    $0.homeURLString = cleaned.isEmpty ? AppSettings.defaultHomeURLString : cleaned
-                                }
-                            }
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(AppLocalization.text("settings.website.allowed_domains", "דומיינים מורשים"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        TextEditor(text: $allowedDomainsString)
-                            .frame(minHeight: 70)
-                            .font(.body)
-                            .onChange(of: allowedDomainsString) { newValue in
-                                let domains = newValue
-                                    .split(whereSeparator: { $0.isNewline })
-                                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-                                    .filter { !$0.isEmpty }
-                                settingsStore.update {
-                                    $0.allowedDomains = domains.isEmpty ? AppSettings.defaults.allowedDomains : domains
-                                }
-                            }
-                    }
-                }
-
-                // Section: Behavior
-                Section(header: Text(AppLocalization.text("settings.section.behavior", "התנהגות")),
-                        footer: Text(AppLocalization.text("settings.footer.behavior", "קישורים לאתרים חיצוניים ייפתחו בתצוגת Safari פנימית כאשר האפשרות פעילה."))) {
-                    Toggle(AppLocalization.text("settings.behavior.external_links", "קישורים חיצוניים ב-Safari"), isOn: Binding(
-                        get: { settingsStore.settings.openExternalLinksInSafariView },
-                        set: { val in settingsStore.update { $0.openExternalLinksInSafariView = val } }
-                    ))
-
-                    Toggle(AppLocalization.text("settings.behavior.toolbar_auto_hide", "הסתרת סרגל בגלילה"), isOn: Binding(
-                        get: { settingsStore.settings.hideToolbarOnScroll },
-                        set: { val in settingsStore.update { $0.hideToolbarOnScroll = val } }
-                    ))
-
-                    Toggle(AppLocalization.text("settings.behavior.desktop_mode", "מצב אתר שולחני"), isOn: Binding(
-                        get: { settingsStore.settings.preferDesktopUserAgent },
-                        set: { val in settingsStore.update { $0.preferDesktopUserAgent = val } }
-                    ))
-                }
-
-                // Section: Spotlight
-                Section(header: Text(AppLocalization.text("settings.section.spotlight", "Spotlight")),
-                        footer: Text(AppLocalization.text("settings.footer.spotlight", "בונה את אינדקס הספרים מקומית ומעדכן את Spotlight של iOS ברקע."))) {
-                    Button {
-                        runSpotlightRefresh(force: false)
-                    } label: {
-                        HStack {
-                            Text(AppLocalization.text("settings.spotlight.update_index", "עדכון אינדקס Spotlight"))
-                            Spacer()
-                            if showingSpotlightProgress {
-                                ProgressView()
-                            }
-                        }
-                    }
-
-                    Button(role: .destructive) {
-                        showingDeleteSpotlightAlert = true
-                    } label: {
-                        Text(AppLocalization.text("settings.spotlight.delete_index", "מחיקת אינדקס Spotlight"))
-                    }
-
-                    Button {
-                        shareDiagnosticLog()
-                    } label: {
-                        Label(AppLocalization.text("settings.spotlight.share_log", "שיתוף לוג אבחון"), systemImage: "square.and.arrow.up")
-                    }
-                }
-
-                // Section: Data
-                Section(header: Text(AppLocalization.text("settings.section.data", "נתונים"))) {
-                    Button(role: .destructive) {
-                        showingClearHistoryAlert = true
-                    } label: {
-                        Text(AppLocalization.text("settings.data.clear_history", "ניקוי היסטוריה"))
-                    }
-
-                    Button(role: .destructive) {
-                        showingClearWebsiteDataAlert = true
-                    } label: {
-                        Text(AppLocalization.text("settings.data.clear_website_data", "ניקוי נתוני אתר (Cookies / Cache)"))
-                    }
-
-                    Button(role: .destructive) {
-                        showingResetAlert = true
-                    } label: {
-                        Text(AppLocalization.text("settings.data.reset_settings", "איפוס הגדרות לברירת מחדל"))
-                    }
-                }
-
-                // Section: Deep Links
-                Section(header: Text(AppLocalization.text("settings.section.links", "קישורים עמוקים")),
-                        footer: Text(AppLocalization.text("settings.footer.links", "סכמת ה-URL המותאמת עובדת מיד."))) {
-                    Button {
-                        let text = "nativeweb://open?url=https://alhatorah.org/"
-                        UIPasteboard.general.string = text
-                        showToast(AppLocalization.text("common.copied", "הועתק"))
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(AppLocalization.text("settings.links.custom_scheme", "סכמת URL מותאמת"))
-                                    .foregroundColor(.primary)
-                                Text("nativeweb://open?url=https://alhatorah.org/")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "doc.on.doc")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-
-                // Section: About
-                Section(header: Text(AppLocalization.text("settings.section.about", "אודות"))) {
-                    HStack {
-                        Text(AppLocalization.text("settings.about.title", "על־התורה"))
-                        Spacer()
-                        Text("AlHaTorah iOS")
-                            .foregroundColor(.secondary)
-                    }
-                }
+                accountSection
+                websiteSection
+                behaviorSection
+                spotlightSection
+                dataSection
+                deepLinksSection
+                aboutSection
             }
             .navigationTitle(AppLocalization.text("tabs.settings", "הגדרות"))
             .alert(spotlightMessage ?? "", isPresented: Binding(
@@ -283,6 +108,206 @@ public struct NativeSettingsView: View {
                     showToast(AppLocalization.text("settings.data.settings_reset", "ההגדרות אופסו"))
                 }
                 Button(AppLocalization.text("common.cancel", "ביטול"), role: .cancel) {}
+            }
+        }
+        .navigationViewStyle(.stack)
+    }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var accountSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.account", "חשבון על־התורה")),
+                footer: Text(AppLocalization.text("settings.footer.account", "ההתחברות מתבצעת דרך קורא על־התורה ומסנכרנת אוטומטית סימניות, הערות, הדגשות והיסטוריה."))) {
+            HStack {
+                Image(systemName: sessionStore.isLoggedIn ? "person.crop.circle.fill.badge.checkmark" : "person.crop.circle")
+                    .foregroundColor(sessionStore.isLoggedIn ? .green : .secondary)
+                    .font(.title2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(sessionStore.isLoggedIn ? (sessionStore.userEmail ?? "מחובר") : AppLocalization.text("settings.account.not_logged_in", "לא מחובר"))
+                        .font(.headline)
+                    Text(sessionStore.isLoggedIn
+                         ? AppLocalization.text("settings.account.status_connected", "מחובר ל־users.alhatorah.org")
+                         : AppLocalization.text("settings.account.status_disconnected", "התחבר כדי לגשת לסימניות ולהערות שלך"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            if sessionStore.isLoggedIn {
+                Button {
+                    Task {
+                        await dataStore.syncAll()
+                        showToast(AppLocalization.text("settings.account.synced", "הנתונים סונכרנו בהצלחה"))
+                    }
+                } label: {
+                    Label(AppLocalization.text("settings.account.sync_now", "סנכרן נתונים עכשיו"), systemImage: "arrow.triangle.2.circlepath")
+                }
+
+                Button(role: .destructive) {
+                    showingLogOutAlert = true
+                } label: {
+                    Label(AppLocalization.text("settings.account.logout", "התנתק"), systemImage: "rectangle.portrait.and.arrow.right")
+                }
+            } else {
+                Button {
+                    if let loginURL = URL(string: "https://users.alhatorah.org/login") {
+                        coordinator.openInReader(url: loginURL)
+                    }
+                } label: {
+                    Label(AppLocalization.text("settings.account.login_via_reader", "התחבר דרך הקורא"), systemImage: "arrow.up.right.square")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var websiteSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.website", "אתר")),
+                footer: Text(AppLocalization.text("settings.footer.website", "עריכת דף הבית והדומיינים המורשים. דומיין אחד בכל שורה."))) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(AppLocalization.text("settings.website.home_url", "כתובת דף הבית"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("https://alhatorah.org/", text: $homeURLString)
+                    .keyboardType(.URL)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .onChange(of: homeURLString) { newValue in
+                        let cleaned = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                        settingsStore.update {
+                            $0.homeURLString = cleaned.isEmpty ? AppSettings.defaultHomeURLString : cleaned
+                        }
+                    }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(AppLocalization.text("settings.website.allowed_domains", "דומיינים מורשים"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextEditor(text: $allowedDomainsString)
+                    .frame(minHeight: 70)
+                    .font(.body)
+                    .onChange(of: allowedDomainsString) { newValue in
+                        let domains = newValue
+                            .split(whereSeparator: { $0.isNewline })
+                            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                            .filter { !$0.isEmpty }
+                        settingsStore.update {
+                            $0.allowedDomains = domains.isEmpty ? AppSettings.defaults.allowedDomains : domains
+                        }
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var behaviorSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.behavior", "התנהגות")),
+                footer: Text(AppLocalization.text("settings.footer.behavior", "קישורים לאתרים חיצוניים ייפתחו בתצוגת Safari פנימית כאשר האפשרות פעילה."))) {
+            Toggle(AppLocalization.text("settings.behavior.external_links", "קישורים חיצוניים ב-Safari"), isOn: Binding(
+                get: { settingsStore.settings.openExternalLinksInSafariView },
+                set: { val in settingsStore.update { $0.openExternalLinksInSafariView = val } }
+            ))
+
+            Toggle(AppLocalization.text("settings.behavior.toolbar_auto_hide", "הסתרת סרגל בגלילה"), isOn: Binding(
+                get: { settingsStore.settings.hideToolbarOnScroll },
+                set: { val in settingsStore.update { $0.hideToolbarOnScroll = val } }
+            ))
+
+            Toggle(AppLocalization.text("settings.behavior.desktop_mode", "מצב אתר שולחני"), isOn: Binding(
+                get: { settingsStore.settings.preferDesktopUserAgent },
+                set: { val in settingsStore.update { $0.preferDesktopUserAgent = val } }
+            ))
+        }
+    }
+
+    @ViewBuilder
+    private var spotlightSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.spotlight", "Spotlight")),
+                footer: Text(AppLocalization.text("settings.footer.spotlight", "בונה את אינדקס הספרים מקומית ומעדכן את Spotlight של iOS ברקע."))) {
+            Button {
+                runSpotlightRefresh(force: false)
+            } label: {
+                HStack {
+                    Text(AppLocalization.text("settings.spotlight.update_index", "עדכון אינדקס Spotlight"))
+                    Spacer()
+                    if showingSpotlightProgress {
+                        ProgressView()
+                    }
+                }
+            }
+
+            Button(role: .destructive) {
+                showingDeleteSpotlightAlert = true
+            } label: {
+                Text(AppLocalization.text("settings.spotlight.delete_index", "מחיקת אינדקס Spotlight"))
+            }
+
+            Button {
+                shareDiagnosticLog()
+            } label: {
+                Label(AppLocalization.text("settings.spotlight.share_log", "שיתוף לוג אבחון"), systemImage: "square.and.arrow.up")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var dataSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.data", "נתונים"))) {
+            Button(role: .destructive) {
+                showingClearHistoryAlert = true
+            } label: {
+                Text(AppLocalization.text("settings.data.clear_history", "ניקוי היסטוריה"))
+            }
+
+            Button(role: .destructive) {
+                showingClearWebsiteDataAlert = true
+            } label: {
+                Text(AppLocalization.text("settings.data.clear_website_data", "ניקוי נתוני אתר (Cookies / Cache)"))
+            }
+
+            Button(role: .destructive) {
+                showingResetAlert = true
+            } label: {
+                Text(AppLocalization.text("settings.data.reset_settings", "איפוס הגדרות לברירת מחדל"))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var deepLinksSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.links", "קישורים עמוקים")),
+                footer: Text(AppLocalization.text("settings.footer.links", "סכמת ה-URL המותאמת עובדת מיד."))) {
+            Button {
+                let text = "nativeweb://open?url=https://alhatorah.org/"
+                UIPasteboard.general.string = text
+                showToast(AppLocalization.text("common.copied", "הועתק"))
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(AppLocalization.text("settings.links.custom_scheme", "סכמת URL מותאמת"))
+                            .foregroundColor(.primary)
+                        Text("nativeweb://open?url=https://alhatorah.org/")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "doc.on.doc")
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var aboutSection: some View {
+        Section(header: Text(AppLocalization.text("settings.section.about", "אודות"))) {
+            HStack {
+                Text(AppLocalization.text("settings.about.title", "על־התורה"))
+                Spacer()
+                Text("AlHaTorah iOS")
+                    .foregroundColor(.secondary)
             }
         }
     }

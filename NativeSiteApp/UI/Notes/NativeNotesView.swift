@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct NativeNotesView: View {
+struct NativeNotesView: View {
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
 
@@ -9,7 +9,7 @@ public struct NativeNotesView: View {
     @State private var noteToDelete: AlHaTorahNote?
     @State private var showingDeleteAlert = false
 
-    public init() {}
+    init() {}
 
     private var filteredNotes: [AlHaTorahNote] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -25,8 +25,13 @@ public struct NativeNotesView: View {
         }
     }
 
-    public var body: some View {
-        NavigationStack {
+    private var headerCountText: String {
+        let label = AppLocalization.text("notes.count_label", "הערות")
+        return "\(filteredNotes.count) \(label)"
+    }
+
+    var body: some View {
+        NavigationView {
             Group {
                 if dataStore.notes.isEmpty {
                     if #available(iOS 17.0, *) {
@@ -43,7 +48,8 @@ public struct NativeNotesView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("notes.empty.title", "אין הערות"))
-                                .font(.title3.bold())
+                                .font(.title3)
+                                .fontWeight(.bold)
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("notes.empty.detail", "הערות אישיות (גליונות) שתוסיף יופיעו כאן.")
                                  : AppLocalization.text("notes.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את ההערות שלך."))
@@ -70,7 +76,8 @@ public struct NativeNotesView: View {
                                         }
 
                                         Text(note.location.displayTitle)
-                                            .font(.caption.bold())
+                                            .font(.caption)
+                                            .fontWeight(.bold)
                                             .foregroundColor(.accentColor)
 
                                         if !note.plainContent.isEmpty {
@@ -93,7 +100,7 @@ public struct NativeNotesView: View {
                             }
                         } header: {
                             if !filteredNotes.isEmpty {
-                                Text("\(filteredNotes.count) " + AppLocalization.text("notes.count_label", "הערות"))
+                                Text(headerCountText)
                             }
                         }
                     }
@@ -133,5 +140,6 @@ public struct NativeNotesView: View {
                 Text(note.title.isEmpty ? note.location.displayTitle : note.title)
             }
         }
+        .navigationViewStyle(.stack)
     }
 }

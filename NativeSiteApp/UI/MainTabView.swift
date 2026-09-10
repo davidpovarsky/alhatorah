@@ -1,13 +1,13 @@
 import SwiftUI
 
-public struct MainTabView: View {
+struct MainTabView: View {
     @ObservedObject var coordinator: AppCoordinator = .shared
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
 
-    public init() {}
+    init() {}
 
-    public var body: some View {
+    var body: some View {
         TabView(selection: $coordinator.selectedTab) {
             // Tab 1: אתר (Reader WKWebView)
             ReaderTabView()

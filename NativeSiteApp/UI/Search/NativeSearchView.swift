@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct NativeSearchView: View {
+struct NativeSearchView: View {
     @ObservedObject var coordinator: AppCoordinator = .shared
 
     @State private var searchText = ""
@@ -8,15 +8,15 @@ public struct NativeSearchView: View {
     @State private var isLoadingIndex = false
     @State private var selectedFilter: SearchFilter = .all
 
-    public enum SearchFilter: String, CaseIterable, Identifiable {
+    enum SearchFilter: String, CaseIterable, Identifiable {
         case all = "all"
         case tanakh = "tanakh"
         case shas = "shas"
         case commentators = "commentators"
 
-        public var id: String { rawValue }
+        var id: String { rawValue }
 
-        public var title: String {
+        var title: String {
             switch self {
             case .all: return AppLocalization.text("search.filter.all", "הכל")
             case .tanakh: return AppLocalization.text("search.filter.tanakh", "תנ\"ך")
@@ -26,7 +26,7 @@ public struct NativeSearchView: View {
         }
     }
 
-    public init() {}
+    init() {}
 
     private var filteredResults: [BookIndexItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -55,8 +55,8 @@ public struct NativeSearchView: View {
         }.prefix(60))
     }
 
-    public var body: some View {
-        NavigationStack {
+    var body: some View {
+        NavigationView {
             VStack(spacing: 0) {
                 // Filter Picker
                 Picker("סינון", selection: $selectedFilter) {
@@ -91,7 +91,7 @@ public struct NativeSearchView: View {
                                     Spacer()
                                     Image(systemName: "arrow.up.left")
                                         .font(.footnote)
-                                        .foregroundColor(.tertiaryLabel)
+                                        .foregroundColor(Color(UIColor.tertiaryLabel))
                                 }
                                 .padding(.vertical, 2)
                             }
@@ -134,7 +134,7 @@ public struct NativeSearchView: View {
 
                                         Image(systemName: "chevron.backward")
                                             .font(.footnote)
-                                            .foregroundColor(.tertiaryLabel)
+                                            .foregroundColor(Color(UIColor.tertiaryLabel))
                                     }
                                     .padding(.vertical, 2)
                                 }
@@ -152,6 +152,7 @@ public struct NativeSearchView: View {
                 loadIndexIfNeeded()
             }
         }
+        .navigationViewStyle(.stack)
     }
 
     private func loadIndexIfNeeded() {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct NativeHistoryView: View {
+struct NativeHistoryView: View {
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
     @ObservedObject var coordinator: AppCoordinator = .shared
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
@@ -10,7 +10,7 @@ public struct NativeHistoryView: View {
     @State private var showingDeleteAlert = false
     @State private var showingClearAlert = false
 
-    public init() {}
+    init() {}
 
     private var filteredItems: [AlHaTorahHistoryItem] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -25,8 +25,13 @@ public struct NativeHistoryView: View {
         }
     }
 
-    public var body: some View {
-        NavigationStack {
+    private var headerCountText: String {
+        let label = AppLocalization.text("history.count_label", "פריטים")
+        return "\(filteredItems.count) \(label)"
+    }
+
+    var body: some View {
+        NavigationView {
             Group {
                 if dataStore.historyItems.isEmpty {
                     if #available(iOS 17.0, *) {
@@ -43,7 +48,8 @@ public struct NativeHistoryView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("history.empty.title", "אין היסטוריה"))
-                                .font(.title3.bold())
+                                .font(.title3)
+                                .fontWeight(.bold)
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("history.empty.detail", "דפים ומקורות שקראת באתר יופיעו כאן.")
                                  : AppLocalization.text("history.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את היסטוריית הקריאה שלך."))
@@ -74,7 +80,7 @@ public struct NativeHistoryView: View {
                                                     .foregroundColor(.primary)
 
                                                 if let comm = item.commentator, !comm.isEmpty {
-                                                    Text("• " + comm)
+                                                    Text("• \(comm)")
                                                         .font(.subheadline)
                                                         .foregroundColor(.secondary)
                                                 }
@@ -82,7 +88,8 @@ public struct NativeHistoryView: View {
 
                                             HStack(spacing: 8) {
                                                 Text(item.displayCorpus)
-                                                    .font(.caption2.bold())
+                                                    .font(.caption2)
+                                                    .fontWeight(.bold)
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)
                                                     .background(Color.secondary.opacity(0.15))
@@ -98,7 +105,7 @@ public struct NativeHistoryView: View {
 
                                         Image(systemName: "chevron.backward")
                                             .font(.footnote)
-                                            .foregroundColor(.tertiaryLabel)
+                                            .foregroundColor(Color(UIColor.tertiaryLabel))
                                     }
                                     .padding(.vertical, 2)
                                 }
@@ -113,7 +120,7 @@ public struct NativeHistoryView: View {
                             }
                         } header: {
                             if !filteredItems.isEmpty {
-                                Text("\(filteredItems.count) " + AppLocalization.text("history.count_label", "פריטים"))
+                                Text(headerCountText)
                             }
                         }
                     }
@@ -168,5 +175,6 @@ public struct NativeHistoryView: View {
                 Text(AppLocalization.text("history.clear_confirm_message", "האם למחוק את כל פריטי ההיסטוריה מחשבונך?"))
             }
         }
+        .navigationViewStyle(.stack)
     }
 }

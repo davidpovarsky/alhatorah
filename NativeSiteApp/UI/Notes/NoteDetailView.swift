@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct NoteDetailView: View {
+struct NoteDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
     @ObservedObject var coordinator: AppCoordinator = .shared
@@ -10,7 +10,7 @@ public struct NoteDetailView: View {
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
 
-    public init(note: AlHaTorahNote) {
+    init(note: AlHaTorahNote) {
         self.note = note
     }
 
@@ -18,7 +18,7 @@ public struct NoteDetailView: View {
         dataStore.notes.first(where: { $0.id == note.id }) ?? note
     }
 
-    public var body: some View {
+    var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 // Header location card
@@ -30,7 +30,8 @@ public struct NoteDetailView: View {
                         Spacer()
                         if currentNote.location.isCommentary {
                             Text(currentNote.location.parshan)
-                                .font(.caption.bold())
+                                .font(.caption)
+                                .fontWeight(.bold)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
                                 .background(Color.secondary.opacity(0.15))
@@ -52,7 +53,8 @@ public struct NoteDetailView: View {
                 // Note Content
                 VStack(alignment: .leading, spacing: 10) {
                     Text(currentNote.title)
-                        .font(.title2.bold())
+                        .font(.title2)
+                        .fontWeight(.bold)
 
                     Divider()
 

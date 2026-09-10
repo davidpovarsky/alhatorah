@@ -1,10 +1,10 @@
 import SwiftUI
 
-public struct NoteEditorSheet: View {
+struct NoteEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
 
-    public enum Mode {
+    enum Mode {
         case create(initialLocation: AlHaTorahLocation?, initialText: String?)
         case edit(note: AlHaTorahNote)
     }
@@ -22,7 +22,7 @@ public struct NoteEditorSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    public init(mode: Mode) {
+    init(mode: Mode) {
         self.mode = mode
         switch mode {
         case .create(let loc, let text):
@@ -49,8 +49,8 @@ public struct NoteEditorSheet: View {
         return false
     }
 
-    public var body: some View {
-        NavigationStack {
+    var body: some View {
+        NavigationView {
             Form {
                 if let error = errorMessage {
                     Section {
@@ -121,12 +121,13 @@ public struct NoteEditorSheet: View {
                         Button(AppLocalization.text("common.save", "שמור")) {
                             saveNote()
                         }
-                        .bold()
+                        .fontWeight(.bold)
                         .disabled(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }
             }
         }
+        .navigationViewStyle(.stack)
     }
 
     private func saveNote() {

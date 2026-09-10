@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct NativeBookmarksView: View {
+struct NativeBookmarksView: View {
     @ObservedObject var dataStore: AlHaTorahDataStore = .shared
     @ObservedObject var coordinator: AppCoordinator = .shared
     @ObservedObject var sessionStore: AlHaTorahSessionStore = .shared
@@ -9,7 +9,7 @@ public struct NativeBookmarksView: View {
     @State private var itemToDelete: AlHaTorahBookmark?
     @State private var showingDeleteAlert = false
 
-    public init() {}
+    init() {}
 
     private var filteredBookmarks: [AlHaTorahBookmark] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -24,8 +24,13 @@ public struct NativeBookmarksView: View {
         }
     }
 
-    public var body: some View {
-        NavigationStack {
+    private var headerCountText: String {
+        let label = AppLocalization.text("bookmarks.count_label", "סימניות")
+        return "\(filteredBookmarks.count) \(label)"
+    }
+
+    var body: some View {
+        NavigationView {
             Group {
                 if dataStore.bookmarks.isEmpty {
                     if #available(iOS 17.0, *) {
@@ -42,7 +47,8 @@ public struct NativeBookmarksView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("bookmarks.empty.title", "אין סימניות"))
-                                .font(.title3.bold())
+                                .font(.title3)
+                                .fontWeight(.bold)
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("bookmarks.empty.detail", "סמן פסוקים או מקורות בקורא כדי לשמור אותם כאן.")
                                  : AppLocalization.text("bookmarks.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את הסימניות שלך."))
@@ -80,7 +86,7 @@ public struct NativeBookmarksView: View {
 
                                         Image(systemName: "chevron.backward")
                                             .font(.footnote)
-                                            .foregroundColor(.tertiaryLabel)
+                                            .foregroundColor(Color(UIColor.tertiaryLabel))
                                     }
                                     .padding(.vertical, 2)
                                 }
@@ -95,7 +101,7 @@ public struct NativeBookmarksView: View {
                             }
                         } header: {
                             if !filteredBookmarks.isEmpty {
-                                Text("\(filteredBookmarks.count) " + AppLocalization.text("bookmarks.count_label", "סימניות"))
+                                Text(headerCountText)
                             }
                         }
                     }
@@ -123,5 +129,6 @@ public struct NativeBookmarksView: View {
                 Text(bookmark.displayTitle)
             }
         }
+        .navigationViewStyle(.stack)
     }
 }

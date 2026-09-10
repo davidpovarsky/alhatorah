@@ -4,13 +4,13 @@ protocol SettingsStoreDelegate: AnyObject {
     func settingsStoreDidChange(_ store: SettingsStore)
 }
 
-final class SettingsStore {
+final class SettingsStore: ObservableObject {
     weak var delegate: SettingsStoreDelegate?
 
     private let userDefaults: UserDefaults
     private let key = "native_site_app.settings.v1"
 
-    private(set) var settings: AppSettings {
+    @Published private(set) var settings: AppSettings {
         didSet {
             save()
             delegate?.settingsStoreDidChange(self)
