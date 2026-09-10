@@ -34,6 +34,15 @@ final class BrowserViewController: UIViewController {
     private var titleObservation: NSKeyValueObservation?
     private var urlObservation: NSKeyValueObservation?
 
+    var onLocationUpdate: ((AlHaTorahLocation?, URL?) -> Void)?
+    var onSelectionUpdate: ((ActiveTextSelection?) -> Void)?
+    var onNavStateUpdate: ((Bool, Bool, Bool, String) -> Void)?
+
+    var currentAlHaTorahLocation: AlHaTorahLocation? {
+        guard let url = webView?.url else { return nil }
+        return AlHaTorahLocation.from(url: url)
+    }
+
     init(settingsStore: SettingsStore, tabStore: TabStore, historyStore: HistoryStore) {
         self.settingsStore = settingsStore
         self.tabStore = tabStore
@@ -138,6 +147,66 @@ final class BrowserViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
 
+        let userContentController = configuration.userContentController
+        let highlightScript = """
+        window.__ahtGetSelection = function() {
+            var sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+            var range = sel.getRangeAt(0);
+            var text = sel.toString().trim();
+            if (!text) return null;
+            var container = range.startContainer;
+            var el = container.nodeType === 1 ? container : container.parentElement;
+            var pElem = el ? el.closest('.parshan-p, .pasuk, p') : null;
+            var parshan = '_mainVerse';
+            var paragraphIndex = null;
+            if (pElem) {
+                var parshanContainer = pElem.closest('[data-parshan]');
+                if (parshanContainer) {
+                    parshan = parshanContainer.getAttribute('data-parshan') || '_mainVerse';
+                    if (parshan !== '_mainVerse' && parshan !== '_mainVerseEn' && parshan !== '_mainTur') {
+                        var siblings = parshanContainer.querySelectorAll('.parshan-p');
+                        for (var i = 0; i < siblings.length; i++) {
+                            if (siblings[i] === pElem) { paragraphIndex = i; break; }
+                        }
+                    }
+                }
+            }
+            return {
+                text: text,
+                begin: range.startOffset,
+                end: range.endOffset,
+                parshan: parshan,
+                paragraph: paragraphIndex
+            };
+        };
+        window.__ahtApplyHighlight = function(color) {
+            var sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            var range = sel.getRangeAt(0);
+            var span = document.createElement('span');
+            span.style.backgroundColor = color;
+            span.className = 'aht-native-highlight';
+            try {
+                range.surroundContents(span);
+            } catch(e) {
+                document.execCommand('hiliteColor', false, color);
+            }
+        };
+        document.addEventListener('selectionchange', function() {
+            var info = window.__ahtGetSelection();
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ahtReader) {
+                window.webkit.messageHandlers.ahtReader.postMessage({
+                    type: 'selection',
+                    info: info
+                });
+            }
+        });
+        """
+        let userScript = WKUserScript(source: highlightScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        userContentController.addUserScript(userScript)
+        userContentController.add(self, name: "ahtReader")
+
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
@@ -155,9 +224,31 @@ final class BrowserViewController: UIViewController {
         ])
     }
 
+    func performGoBack() {
+        if webView?.canGoBack == true { webView?.goBack() }
+    }
+
+    func performGoForward() {
+        if webView?.canGoForward == true { webView?.goForward() }
+    }
+
+    func performReloadOrStop() {
+        if webView?.isLoading == true {
+            webView?.stopLoading()
+        } else {
+            webView?.reload()
+        }
+    }
+
+    func evaluateHighlightInDOM(colorHex: String) {
+        let js = "window.__ahtApplyHighlight && window.__ahtApplyHighlight('\(colorHex)');"
+        webView?.evaluateJavaScript(js, completionHandler: nil)
+    }
+
     private func configureToolbar() {
         toolbar.translatesAutoresizingMaskIntoConstraints = false
         toolbar.isTranslucent = true
+        toolbar.isHidden = true
         view.addSubview(toolbar)
 
         toolbarBottomConstraint = toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
@@ -259,6 +350,7 @@ final class BrowserViewController: UIViewController {
         reloadItem?.image = UIImage(systemName: imageName)
         safariViewItem?.isEnabled = currentPageURL != nil
         updateBackForwardMenus()
+        onNavStateUpdate?(webView?.canGoBack ?? false, webView?.canGoForward ?? false, webView?.isLoading ?? false, webView?.title ?? "")
     }
 
     private func updateBackForwardMenus() {
@@ -679,10 +771,13 @@ extension BrowserViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if let url = webView.url {
             historyStore.add(title: webView.title, url: url)
+            let loc = currentAlHaTorahLocation
+            onLocationUpdate?(loc, url)
         }
         syncCurrentTabFromWebView()
         captureCurrentTabSnapshot()
         rebuildMainMenu()
+        onNavStateUpdate?(webView.canGoBack, webView.canGoForward, webView.isLoading, webView.title ?? "")
     }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         updateToolbarItems()
@@ -944,5 +1039,49 @@ private final class AlHaTorahIndexSearchViewController: UITableViewController, U
 
     @objc private func done() {
         dismiss(animated: true)
+    }
+}
+
+extension BrowserViewController: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "ahtReader",
+              let dict = message.body as? [String: Any],
+              let type = dict["type"] as? String else { return }
+
+        if type == "selection" {
+            guard let info = dict["info"] as? [String: Any],
+                  let text = info["text"] as? String, !text.isEmpty else {
+                onSelectionUpdate?(nil)
+                return
+            }
+            let begin = info["begin"] as? Int ?? 0
+            let end = info["end"] as? Int ?? (begin + text.count)
+            let parshan = info["parshan"] as? String ?? "_mainVerse"
+            let paragraph = info["paragraph"] as? Int
+
+            var loc = currentAlHaTorahLocation ?? AlHaTorahLocation(
+                book: "Shemot",
+                unit: "1",
+                subUnit: 1,
+                parshan: parshan,
+                paragraph: paragraph,
+                begin: begin,
+                end: end
+            )
+            loc.parshan = parshan
+            loc.paragraph = paragraph
+            loc.begin = begin
+            loc.end = end
+
+            let selection = ActiveTextSelection(
+                text: text,
+                begin: begin,
+                end: end,
+                parshan: parshan,
+                paragraph: paragraph,
+                location: loc
+            )
+            onSelectionUpdate?(selection)
+        }
     }
 }

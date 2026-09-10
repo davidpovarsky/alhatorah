@@ -68,3 +68,74 @@
 "spotlight.kind" = "AlHaTorah source";
 "spotlight.description.en" = "AlHaTorah library source";
 "spotlight.description.he" = "AlHaTorah library source";
+
+"tabs.reader" = "Reader";
+"tabs.history" = "History";
+"tabs.bookmarks" = "Bookmarks";
+"tabs.notes" = "Notes";
+"tabs.search" = "Search";
+"tabs.settings" = "Settings";
+
+"bookmarks.empty.title" = "No Bookmarks";
+"bookmarks.empty.detail" = "Bookmark verses or sources in the reader to save them here.";
+"bookmarks.empty.login_detail" = "Log in to your AlHaTorah account to sync your bookmarks.";
+"bookmarks.count_label" = "bookmarks";
+"bookmarks.search_prompt" = "Search bookmarks";
+"bookmarks.delete_confirm_title" = "Delete Bookmark";
+
+"history.empty.title" = "No History";
+"history.empty.detail" = "Pages and sources you visited will appear here.";
+"history.empty.login_detail" = "Log in to your AlHaTorah account to sync your reading history.";
+"history.count_label" = "items";
+"history.search_prompt" = "Search history";
+"history.clear_all" = "Clear History";
+"history.delete_confirm_title" = "Delete History Item";
+"history.clear_confirm_title" = "Clear History";
+"history.clear_all_action" = "Clear All History";
+"history.clear_confirm_message" = "Are you sure you want to delete all history items from your account?";
+
+"notes.empty.title" = "No Notes";
+"notes.empty.detail" = "Personal notes (gilyonot) you create will appear here.";
+"notes.empty.login_detail" = "Log in to your AlHaTorah account to sync your notes.";
+"notes.count_label" = "notes";
+"notes.search_prompt" = "Search notes";
+"notes.detail_title" = "Note";
+"notes.open_in_reader" = "Open in AlHaTorah Reader";
+"notes.delete_confirm_title" = "Delete Note";
+"notes.delete_confirm_message" = "Are you sure you want to delete this note permanently?";
+"notes.editor.edit_title" = "Edit Note";
+"notes.editor.new_title" = "New Note";
+"notes.editor.title_header" = "Title";
+"notes.editor.title_placeholder" = "Note title";
+"notes.editor.location_header" = "Torah / Commentary Location";
+"notes.editor.book" = "Book";
+"notes.editor.chapter" = "Chapter / Daf";
+"notes.editor.verse" = "Verse / Segment";
+"notes.editor.parshan" = "Commentator / Source";
+"notes.editor.content_header" = "Note Content";
+
+"search.filter.all" = "All";
+"search.filter.tanakh" = "Tanakh";
+"search.filter.shas" = "Shas";
+"search.filter.commentators" = "Commentators";
+"search.web_search_title" = "Search Full AlHaTorah Text";
+"search.web_search_header" = "Full Text Search";
+"search.index_header" = "Book & Source Index";
+"search.no_results" = "No sources found in index";
+"search.prompt" = "Search book, tractate, commentator...";
+
+"settings.section.account" = "AlHaTorah Account";
+"settings.footer.account" = "Login is handled securely through the AlHaTorah reader and automatically syncs bookmarks, notes, highlights, and history.";
+"settings.account.not_logged_in" = "Not logged in";
+"settings.account.status_connected" = "Connected to users.alhatorah.org";
+"settings.account.status_disconnected" = "Log in to access your bookmarks and notes";
+"settings.account.sync_now" = "Sync Data Now";
+"settings.account.synced" = "Data synchronized successfully";
+"settings.account.logout" = "Log Out";
+"settings.account.logged_out" = "Logged out successfully";
+"settings.account.login_via_reader" = "Log In via Reader";
+"settings.account.logout_confirm_title" = "Log Out";
+"settings.account.logout_confirm_message" = "Are you sure you want to log out of your AlHaTorah account?";
+
+"common.edit" = "Edit";
+"common.save" = "Save";

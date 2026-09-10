@@ -68,3 +68,74 @@
 "spotlight.kind" = "מקור על־התורה";
 "spotlight.description.en" = "מקור בספריית על־התורה";
 "spotlight.description.he" = "מקור בספריית על־התורה";
+
+"tabs.reader" = "אתר";
+"tabs.history" = "היסטוריה";
+"tabs.bookmarks" = "סימניות";
+"tabs.notes" = "הערות";
+"tabs.search" = "חיפוש";
+"tabs.settings" = "הגדרות";
+
+"bookmarks.empty.title" = "אין סימניות";
+"bookmarks.empty.detail" = "סמן פסוקים או מקורות בקורא כדי לשמור אותם כאן.";
+"bookmarks.empty.login_detail" = "התחבר לחשבון על־התורה כדי לסנכרן את הסימניות שלך.";
+"bookmarks.count_label" = "סימניות";
+"bookmarks.search_prompt" = "חיפוש בסימניות";
+"bookmarks.delete_confirm_title" = "מחיקת סימניה";
+
+"history.empty.title" = "אין היסטוריה";
+"history.empty.detail" = "דפים ומקורות שקראת באתר יופיעו כאן.";
+"history.empty.login_detail" = "התחבר לחשבון על־התורה כדי לסנכרן את היסטוריית הקריאה שלך.";
+"history.count_label" = "פריטים";
+"history.search_prompt" = "חיפוש בהיסטוריה";
+"history.clear_all" = "נקה היסטוריה";
+"history.delete_confirm_title" = "מחיקת פריט היסטוריה";
+"history.clear_confirm_title" = "ניקוי היסטוריה";
+"history.clear_all_action" = "נקה את כל ההיסטוריה";
+"history.clear_confirm_message" = "האם למחוק את כל פריטי ההיסטוריה מחשבונך?";
+
+"notes.empty.title" = "אין הערות";
+"notes.empty.detail" = "הערות אישיות (גליונות) שתוסיף יופיעו כאן.";
+"notes.empty.login_detail" = "התחבר לחשבון על־התורה כדי לסנכרן את ההערות שלך.";
+"notes.count_label" = "הערות";
+"notes.search_prompt" = "חיפוש בהערות";
+"notes.detail_title" = "הערה";
+"notes.open_in_reader" = "פתח בקורא על־התורה";
+"notes.delete_confirm_title" = "מחיקת הערה";
+"notes.delete_confirm_message" = "האם למחוק הערה זו לצמיתות?";
+"notes.editor.edit_title" = "עריכת הערה";
+"notes.editor.new_title" = "הערה חדשה";
+"notes.editor.title_header" = "כותרת";
+"notes.editor.title_placeholder" = "כותרת ההערה";
+"notes.editor.location_header" = "מיקום בתורה / מפרש";
+"notes.editor.book" = "ספר";
+"notes.editor.chapter" = "פרק / דף";
+"notes.editor.verse" = "פסוק / קטע";
+"notes.editor.parshan" = "מפרש / מקור";
+"notes.editor.content_header" = "תוכן ההערה";
+
+"search.filter.all" = "הכל";
+"search.filter.tanakh" = "תנ\"ך";
+"search.filter.shas" = "ש\"ס";
+"search.filter.commentators" = "מפרשים";
+"search.web_search_title" = "חיפוש בטקסט על־התורה";
+"search.web_search_header" = "חיפוש טקסט מלא";
+"search.index_header" = "אינדקס ספרים ומקורות";
+"search.no_results" = "לא נמצאו מקורות באינדקס";
+"search.prompt" = "חיפוש ספר, מסכת, מפרש...";
+
+"settings.section.account" = "חשבון על־התורה";
+"settings.footer.account" = "ההתחברות מתבצעת דרך קורא על־התורה ומסנכרנת אוטומטית סימניות, הערות, הדגשות והיסטוריה.";
+"settings.account.not_logged_in" = "לא מחובר";
+"settings.account.status_connected" = "מחובר ל־users.alhatorah.org";
+"settings.account.status_disconnected" = "התחבר כדי לגשת לסימניות ולהערות שלך";
+"settings.account.sync_now" = "סנכרן נתונים עכשיו";
+"settings.account.synced" = "הנתונים סונכרנו בהצלחה";
+"settings.account.logout" = "התנתק";
+"settings.account.logged_out" = "התנתקת בהצלחה";
+"settings.account.login_via_reader" = "התחבר דרך הקורא";
+"settings.account.logout_confirm_title" = "התנתקות";
+"settings.account.logout_confirm_message" = "האם להתנתק מחשבון על־התורה?";
+
+"common.edit" = "ערוך";
+"common.save" = "שמור";

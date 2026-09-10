@@ -38,6 +38,22 @@
 		AB1000000000000000000011 /* he Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000011 /* he Localizable.strings */; };
 		AB1000000000000000000012 /* en InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000012 /* en InfoPlist.strings */; };
 		AB1000000000000000000013 /* he InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000013 /* he InfoPlist.strings */; };
+		AB1000000000000000000021 /* AlHaTorahLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000021 /* AlHaTorahLocation.swift */; };
+		AB1000000000000000000022 /* AlHaTorahModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000022 /* AlHaTorahModels.swift */; };
+		AB1000000000000000000023 /* AlHaTorahDashboardParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000023 /* AlHaTorahDashboardParser.swift */; };
+		AB1000000000000000000024 /* AlHaTorahSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000024 /* AlHaTorahSessionStore.swift */; };
+		AB1000000000000000000025 /* AlHaTorahAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000025 /* AlHaTorahAPIClient.swift */; };
+		AB1000000000000000000026 /* AlHaTorahDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000026 /* AlHaTorahDataStore.swift */; };
+		AB1000000000000000000027 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000027 /* AppCoordinator.swift */; };
+		AB1000000000000000000028 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000028 /* MainTabView.swift */; };
+		AB1000000000000000000029 /* ReaderTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000029 /* ReaderTabView.swift */; };
+		AB1000000000000000000030 /* NativeHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000030 /* NativeHistoryView.swift */; };
+		AB1000000000000000000031 /* NativeBookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000031 /* NativeBookmarksView.swift */; };
+		AB1000000000000000000032 /* NativeNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000032 /* NativeNotesView.swift */; };
+		AB1000000000000000000033 /* NoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000033 /* NoteDetailView.swift */; };
+		AB1000000000000000000034 /* NoteEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000034 /* NoteEditorSheet.swift */; };
+		AB1000000000000000000035 /* NativeSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000035 /* NativeSearchView.swift */; };
+		AB1000000000000000000036 /* NativeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2000000000000000000036 /* NativeSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,6 +91,22 @@
 		AB2000000000000000000011 /* he Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AB2000000000000000000012 /* en InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AB2000000000000000000013 /* he InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		AB2000000000000000000021 /* AlHaTorahLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahLocation.swift; sourceTree = "<group>"; };
+		AB2000000000000000000022 /* AlHaTorahModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahModels.swift; sourceTree = "<group>"; };
+		AB2000000000000000000023 /* AlHaTorahDashboardParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahDashboardParser.swift; sourceTree = "<group>"; };
+		AB2000000000000000000024 /* AlHaTorahSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahSessionStore.swift; sourceTree = "<group>"; };
+		AB2000000000000000000025 /* AlHaTorahAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahAPIClient.swift; sourceTree = "<group>"; };
+		AB2000000000000000000026 /* AlHaTorahDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlHaTorahDataStore.swift; sourceTree = "<group>"; };
+		AB2000000000000000000027 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		AB2000000000000000000028 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000029 /* ReaderTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reader/ReaderTabView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000030 /* NativeHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History/NativeHistoryView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000031 /* NativeBookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bookmarks/NativeBookmarksView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000032 /* NativeNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/NativeNotesView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000033 /* NoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/NoteDetailView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000034 /* NoteEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notes/NoteEditorSheet.swift; sourceTree = "<group>"; };
+		AB2000000000000000000035 /* NativeSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Search/NativeSearchView.swift; sourceTree = "<group>"; };
+		AB2000000000000000000036 /* NativeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/NativeSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +153,7 @@
 				A00000000000000000000025 /* History */,
 				A00000000000000000000026 /* Settings */,
 				AB3000000000000000000001 /* Spotlight */,
+				AB3000000000000000000002 /* UI */,
 			);
 			path = NativeSiteApp;
 			sourceTree = "<group>";
@@ -147,6 +180,13 @@
 				B751AF7D07F48D97D6B3824E /* TabStore.swift */,
 				FB74F73CDE93D93AF9378062 /* HistoryStore.swift */,
 				AB2000000000000000000001 /* BookIndexModels.swift */,
+				AB2000000000000000000021 /* AlHaTorahLocation.swift */,
+				AB2000000000000000000022 /* AlHaTorahModels.swift */,
+				AB2000000000000000000023 /* AlHaTorahDashboardParser.swift */,
+				AB2000000000000000000024 /* AlHaTorahSessionStore.swift */,
+				AB2000000000000000000025 /* AlHaTorahAPIClient.swift */,
+				AB2000000000000000000026 /* AlHaTorahDataStore.swift */,
+				AB2000000000000000000027 /* AppCoordinator.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -206,6 +246,22 @@
 				AB2000000000000000000006 /* SpotlightBackgroundScheduler.swift */,
 			);
 			path = Spotlight;
+			sourceTree = "<group>";
+		};
+		AB3000000000000000000002 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				AB2000000000000000000028 /* MainTabView.swift */,
+				AB2000000000000000000029 /* ReaderTabView.swift */,
+				AB2000000000000000000030 /* NativeHistoryView.swift */,
+				AB2000000000000000000031 /* NativeBookmarksView.swift */,
+				AB2000000000000000000032 /* NativeNotesView.swift */,
+				AB2000000000000000000033 /* NoteDetailView.swift */,
+				AB2000000000000000000034 /* NoteEditorSheet.swift */,
+				AB2000000000000000000035 /* NativeSearchView.swift */,
+				AB2000000000000000000036 /* NativeSettingsView.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -307,6 +363,22 @@
 				AB1000000000000000000004 /* BookIndexBuilder.swift in Sources */,
 				AB1000000000000000000005 /* SpotlightIndexManager.swift in Sources */,
 				AB1000000000000000000006 /* SpotlightBackgroundScheduler.swift in Sources */,
+				AB1000000000000000000021 /* AlHaTorahLocation.swift in Sources */,
+				AB1000000000000000000022 /* AlHaTorahModels.swift in Sources */,
+				AB1000000000000000000023 /* AlHaTorahDashboardParser.swift in Sources */,
+				AB1000000000000000000024 /* AlHaTorahSessionStore.swift in Sources */,
+				AB1000000000000000000025 /* AlHaTorahAPIClient.swift in Sources */,
+				AB1000000000000000000026 /* AlHaTorahDataStore.swift in Sources */,
+				AB1000000000000000000027 /* AppCoordinator.swift in Sources */,
+				AB1000000000000000000028 /* MainTabView.swift in Sources */,
+				AB1000000000000000000029 /* ReaderTabView.swift in Sources */,
+				AB1000000000000000000030 /* NativeHistoryView.swift in Sources */,
+				AB1000000000000000000031 /* NativeBookmarksView.swift in Sources */,
+				AB1000000000000000000032 /* NativeNotesView.swift in Sources */,
+				AB1000000000000000000033 /* NoteDetailView.swift in Sources */,
+				AB1000000000000000000034 /* NoteEditorSheet.swift in Sources */,
+				AB1000000000000000000035 /* NativeSearchView.swift in Sources */,
+				AB1000000000000000000036 /* NativeSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
