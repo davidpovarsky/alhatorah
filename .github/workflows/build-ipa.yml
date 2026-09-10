@@ -7,8 +7,35 @@ permissions:
   contents: read
 
 jobs:
+  e2e-probe:
+    name: Run Authenticated E2E Probe
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run E2E Probe
+        env:
+          ALHATORAH_TEST_EMAIL: ${{ secrets.ALHATORAH_TEST_EMAIL }}
+          ALHATORAH_TEST_PASSWORD: ${{ secrets.ALHATORAH_TEST_PASSWORD }}
+        run: |
+          node scripts/e2e_probe.js
+
+      - name: Upload Probe Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-probe-logs
+          path: build_logs/
+
   build-ipa:
     name: Build unsigned iPhoneOS IPA
+    needs: e2e-probe
     runs-on: macos-latest
 
     steps:
