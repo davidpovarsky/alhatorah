@@ -44,7 +44,11 @@ public final class AlHaTorahDataStore: ObservableObject {
     // MARK: - Sync
 
     public func syncAll() async {
+        if !sessionStore.isLoggedIn {
+            await sessionStore.validateSession()
+        }
         guard sessionStore.isLoggedIn else {
+            errorMessage = "לא מחובר לחשבון על־התורה"
             return
         }
 
@@ -55,12 +59,11 @@ public final class AlHaTorahDataStore: ObservableObject {
         // 1. Sync dashboard history
         do {
             let serverHistory = try await apiClient.fetchDashboardHistory()
-            if !serverHistory.isEmpty {
-                self.historyItems = serverHistory
-                saveLocal(historyItems, to: historyFileName)
-            }
+            self.historyItems = serverHistory
+            saveLocal(historyItems, to: historyFileName)
         } catch {
             AppLogger.shared.log("History sync failed: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         }
 
         // 2. Sync export data (bookmarks, notes, highlights)

@@ -138,7 +138,11 @@ struct NativeSettingsView: View {
                 Button {
                     Task {
                         await dataStore.syncAll()
-                        showToast(AppLocalization.text("settings.account.synced", "הנתונים סונכרנו בהצלחה"))
+                        if let err = dataStore.errorMessage {
+                            showToast("שגיאה בסנכרון: \(err)")
+                        } else {
+                            showToast(AppLocalization.text("settings.account.synced", "הנתונים סונכרנו בהצלחה"))
+                        }
                     }
                 } label: {
                     Label(AppLocalization.text("settings.account.sync_now", "סנכרן נתונים עכשיו"), systemImage: "arrow.triangle.2.circlepath")

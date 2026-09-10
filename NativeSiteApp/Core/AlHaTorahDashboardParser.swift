@@ -4,7 +4,7 @@ public enum AlHaTorahDashboardParser {
     public static func parseHistory(from html: String) -> [AlHaTorahHistoryItem] {
         var items: [AlHaTorahHistoryItem] = []
         
-        let rowPattern = #"(?s)<tr\s+[^>]*?class="[^"]*?history-item[^"]*?"[^>]*?>(.*?)<\/tr>"#
+        let rowPattern = #"(?s)<tr\b([^>]*(?:data-id=|data-base=|history-item)[^>]*)>(.*?)<\/tr>"#
         guard let rowRegex = try? NSRegularExpression(pattern: rowPattern, options: [.caseInsensitive]) else {
             return []
         }
@@ -37,7 +37,8 @@ public enum AlHaTorahDashboardParser {
             let rowRange = NSRange(location: 0, length: nsRow.length)
 
             let id = extractFirstCapture(using: idRegex, in: nsRow, range: rowRange) ?? UUID().uuidString
-            let base = extractFirstCapture(using: baseRegex, in: nsRow, range: rowRange) ?? "tanakh"
+            let rawBase = extractFirstCapture(using: baseRegex, in: nsRow, range: rowRange) ?? "tanakh"
+            let base = rawBase.lowercased()
             let locnum = extractFirstCapture(using: locnumRegex, in: nsRow, range: rowRange)
             let dateStr = extractFirstCapture(using: dateRegex, in: nsRow, range: rowRange)
 
@@ -47,13 +48,13 @@ public enum AlHaTorahDashboardParser {
             }
 
             var rawUrl = ""
-            var title = ""
+            var rawTitle = ""
             if let linkMatch = linkRegex?.firstMatch(in: rowContent, options: [], range: rowRange) {
                 if linkMatch.numberOfRanges > 1 {
                     rawUrl = nsRow.substring(with: linkMatch.range(at: 1))
                 }
                 if linkMatch.numberOfRanges > 2 {
-                    title = nsRow.substring(with: linkMatch.range(at: 2))
+                    rawTitle = nsRow.substring(with: linkMatch.range(at: 2))
                 }
             }
 
@@ -67,7 +68,6 @@ public enum AlHaTorahDashboardParser {
             // Extract commentator if present
             var commentator: String? = nil
             if let commMatches = commentatorRegex?.matches(in: rowContent, options: [], range: rowRange), commMatches.count >= 2 {
-                // The first match is corpus (e.g. תנ"ך), second match is commentator (e.g. ספרי במדבר)
                 let commMatch = commMatches[1]
                 if commMatch.numberOfRanges > 1 {
                     let text = nsRow.substring(with: commMatch.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -77,8 +77,9 @@ public enum AlHaTorahDashboardParser {
                 }
             }
 
-            let cleanedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalTitle = cleanedTitle.isEmpty ? (locnum ?? base) : cleanedTitle
+            let strippedTitle = rawTitle.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let finalTitle = strippedTitle.isEmpty ? (locnum ?? base) : strippedTitle
 
             let item = AlHaTorahHistoryItem(
                 id: id,

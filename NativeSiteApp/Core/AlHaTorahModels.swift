@@ -288,10 +288,56 @@ public struct AlHaTorahRawAnnotation: Codable {
         public let largeUnit: String?
         public let subUnit: Int?
         public let parshan: String?
+
+        enum CodingKeys: String, CodingKey {
+            case base
+            case book
+            case largeUnit
+            case subUnit
+            case parshan
+        }
+
+        public init(
+            base: String? = nil,
+            book: String? = nil,
+            largeUnit: String? = nil,
+            subUnit: Int? = nil,
+            parshan: String? = nil
+        ) {
+            self.base = base
+            self.book = book
+            self.largeUnit = largeUnit
+            self.subUnit = subUnit
+            self.parshan = parshan
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.base = try? container.decodeIfPresent(String.self, forKey: .base)
+            self.book = try? container.decodeIfPresent(String.self, forKey: .book)
+            self.parshan = try? container.decodeIfPresent(String.self, forKey: .parshan)
+
+            if let str = try? container.decodeIfPresent(String.self, forKey: .largeUnit) {
+                self.largeUnit = str
+            } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .largeUnit) {
+                self.largeUnit = String(intVal)
+            } else {
+                self.largeUnit = nil
+            }
+
+            if let intVal = try? container.decodeIfPresent(Int.self, forKey: .subUnit) {
+                self.subUnit = intVal
+            } else if let str = try? container.decodeIfPresent(String.self, forKey: .subUnit), let intVal = Int(str) {
+                self.subUnit = intVal
+            } else {
+                self.subUnit = nil
+            }
+        }
     }
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
+        case altId = "id"
         case dataType
         case type
         case title
@@ -303,11 +349,91 @@ public struct AlHaTorahRawAnnotation: Codable {
         case location
     }
 
+    public init(
+        id: String,
+        dataType: String,
+        type: String? = nil,
+        title: String? = nil,
+        content: String? = nil,
+        color: String? = nil,
+        paragraph: Int? = nil,
+        begin: Int? = nil,
+        end: Int? = nil,
+        location: RawLocation? = nil
+    ) {
+        self.id = id
+        self.dataType = dataType
+        self.type = type
+        self.title = title
+        self.content = content
+        self.color = color
+        self.paragraph = paragraph
+        self.begin = begin
+        self.end = end
+        self.location = location
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? container.decodeIfPresent(String.self, forKey: .id))
+            ?? (try? container.decodeIfPresent(String.self, forKey: .altId))
+            ?? UUID().uuidString
+        guard let dataType = (try? container.decodeIfPresent(String.self, forKey: .dataType)), !dataType.isEmpty else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Missing or invalid dataType"))
+        }
+        self.dataType = dataType
+        self.type = try? container.decodeIfPresent(String.self, forKey: .type)
+        self.title = try? container.decodeIfPresent(String.self, forKey: .title)
+        self.content = try? container.decodeIfPresent(String.self, forKey: .content)
+        self.color = try? container.decodeIfPresent(String.self, forKey: .color)
+
+        if let pInt = try? container.decodeIfPresent(Int.self, forKey: .paragraph) {
+            self.paragraph = pInt
+        } else if let pStr = try? container.decodeIfPresent(String.self, forKey: .paragraph), let pInt = Int(pStr) {
+            self.paragraph = pInt
+        } else {
+            self.paragraph = nil
+        }
+
+        if let bInt = try? container.decodeIfPresent(Int.self, forKey: .begin) {
+            self.begin = bInt
+        } else if let bStr = try? container.decodeIfPresent(String.self, forKey: .begin), let bInt = Int(bStr) {
+            self.begin = bInt
+        } else {
+            self.begin = nil
+        }
+
+        if let eInt = try? container.decodeIfPresent(Int.self, forKey: .end) {
+            self.end = eInt
+        } else if let eStr = try? container.decodeIfPresent(String.self, forKey: .end), let eInt = Int(eStr) {
+            self.end = eInt
+        } else {
+            self.end = nil
+        }
+
+        self.location = try? container.decodeIfPresent(RawLocation.self, forKey: .location)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(dataType, forKey: .dataType)
+        try container.encodeIfPresent(type, forKey: .type)
+        try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(content, forKey: .content)
+        try container.encodeIfPresent(color, forKey: .color)
+        try container.encodeIfPresent(paragraph, forKey: .paragraph)
+        try container.encodeIfPresent(begin, forKey: .begin)
+        try container.encodeIfPresent(end, forKey: .end)
+        try container.encodeIfPresent(location, forKey: .location)
+    }
+
     public func toBookmark() -> AlHaTorahBookmark? {
         guard dataType == "bookmark", let loc = location, let book = loc.book else { return nil }
+        let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
-            mg: loc.base ?? "Tanakh",
+            mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
             subUnit: loc.subUnit ?? 1,
@@ -318,9 +444,10 @@ public struct AlHaTorahRawAnnotation: Codable {
 
     public func toNote() -> AlHaTorahNote? {
         guard dataType == "gilayon", let loc = location, let book = loc.book else { return nil }
+        let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
-            mg: loc.base ?? "Tanakh",
+            mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
             subUnit: loc.subUnit ?? 1,
@@ -341,9 +468,10 @@ public struct AlHaTorahRawAnnotation: Codable {
 
     public func toHighlight() -> AlHaTorahHighlight? {
         guard dataType == "highlight", let loc = location, let book = loc.book else { return nil }
+        let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
-            mg: loc.base ?? "Tanakh",
+            mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
             subUnit: loc.subUnit ?? 1,
@@ -373,6 +501,58 @@ public struct AlHaTorahExportResponse: Codable {
         public let bookmark: [AlHaTorahRawAnnotation]?
         public let gilayon: [AlHaTorahRawAnnotation]?
         public let highlight: [AlHaTorahRawAnnotation]?
+
+        enum CodingKeys: String, CodingKey {
+            case bookmark
+            case gilayon
+            case highlight
+        }
+
+        public init(
+            bookmark: [AlHaTorahRawAnnotation]? = nil,
+            gilayon: [AlHaTorahRawAnnotation]? = nil,
+            highlight: [AlHaTorahRawAnnotation]? = nil
+        ) {
+            self.bookmark = bookmark
+            self.gilayon = gilayon
+            self.highlight = highlight
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.bookmark = Self.decodeTolerantArray(forKey: .bookmark, from: container)
+            self.gilayon = Self.decodeTolerantArray(forKey: .gilayon, from: container)
+            self.highlight = Self.decodeTolerantArray(forKey: .highlight, from: container)
+        }
+
+        private static func decodeTolerantArray(
+            forKey key: CodingKeys,
+            from container: KeyedDecodingContainer<CodingKeys>
+        ) -> [AlHaTorahRawAnnotation]? {
+            guard container.contains(key) else { return nil }
+            guard var unkeyed = try? container.nestedUnkeyedContainer(forKey: key) else { return nil }
+            var result: [AlHaTorahRawAnnotation] = []
+            while !unkeyed.isAtEnd {
+                if let item = try? unkeyed.decode(AlHaTorahRawAnnotation.self) {
+                    result.append(item)
+                } else {
+                    _ = try? unkeyed.decode(DiscardableElement.self)
+                }
+            }
+            return result
+        }
+
+        private struct DiscardableElement: Decodable {
+            init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                if container.decodeNil() { return }
+                if (try? container.decode(Bool.self)) != nil { return }
+                if (try? container.decode(Double.self)) != nil { return }
+                if (try? container.decode(String.self)) != nil { return }
+                if (try? container.decode([String: DiscardableElement].self)) != nil { return }
+                if (try? container.decode([DiscardableElement].self)) != nil { return }
+            }
+        }
     }
 
     enum CodingKeys: String, CodingKey {

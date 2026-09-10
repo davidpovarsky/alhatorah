@@ -131,35 +131,43 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
 
     public static func from(url: URL) -> AlHaTorahLocation? {
         let pathComponents = url.pathComponents.filter { $0 != "/" && !$0.isEmpty }
-        guard pathComponents.count >= 3 else { return nil }
+        guard pathComponents.count >= 2 else { return nil }
 
         let host = url.host?.lowercased() ?? ""
-        let isShas = host.contains("shas") || (pathComponents.count >= 2 && pathComponents[1].lowercased() == "shas")
+        let defaultCorpus = host.contains("shas") ? "Shas" : "Tanakh"
         let mode = pathComponents[0].lowercased() // "full" or "dual"
 
-        if isShas {
-            // e.g. /Full/Shas/Berakhot/2a
-            let book = pathComponents.count > 2 ? pathComponents[2] : ""
-            let unit = pathComponents.count > 3 ? pathComponents[3] : "2a"
-            return AlHaTorahLocation(
-                type: "mg-full",
-                mg: "Shas",
-                book: book,
-                unit: unit,
-                subUnit: 0,
-                parshan: "_mainVerse"
-            )
-        }
+        let knownCorpora: Set<String> = [
+            "tanakh", "shas", "mishna", "mishnah", "rambam", "tur",
+            "shulchan arukh", "shulchanarukh", "tosefta", "yerushalmi", "library"
+        ]
 
         if mode == "dual" {
-            // e.g. /Dual/Rashi/Shemot/6.1
-            let parshan = pathComponents.count > 1 ? pathComponents[1] : "_mainVerse"
-            let book = pathComponents.count > 2 ? pathComponents[2] : ""
-            let unitPart = pathComponents.count > 3 ? pathComponents[3] : "1"
+            // E.g. /Dual/Rashi/Shemot/6.1 or /Dual/Tanakh/Rashi/Shemot/6.1
+            var corpus = defaultCorpus
+            var parshan = "_mainVerse"
+            var book = ""
+            var unitPart = "1"
+
+            if pathComponents.count >= 4 && knownCorpora.contains(pathComponents[1].lowercased()) {
+                corpus = HebrewNames.canonicalMg(from: pathComponents[1])
+                parshan = pathComponents[2]
+                book = pathComponents[3]
+                if pathComponents.count > 4 {
+                    unitPart = pathComponents[4]
+                }
+            } else {
+                parshan = pathComponents.count > 1 ? pathComponents[1] : "_mainVerse"
+                book = pathComponents.count > 2 ? pathComponents[2] : ""
+                if pathComponents.count > 3 {
+                    unitPart = pathComponents[3]
+                }
+            }
+
             let (unit, subUnit) = parseUnitPart(unitPart)
             return AlHaTorahLocation(
                 type: "mg-dual",
-                mg: "Tanakh",
+                mg: corpus,
                 book: book,
                 unit: unit,
                 subUnit: subUnit,
@@ -168,11 +176,27 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
         }
 
         if mode == "full" {
-            // e.g. /Full/Tanakh/Shemot/6.1
-            let corpus = pathComponents.count > 1 ? pathComponents[1] : "Tanakh"
-            let book = pathComponents.count > 2 ? pathComponents[2] : ""
-            let unitPart = pathComponents.count > 3 ? pathComponents[3] : "1"
-            let (unit, subUnit) = parseUnitPart(unitPart)
+            // E.g. /Full/Devarim/32.1 or /Full/Tanakh/Devarim/32.1 or /Full/Shas/Berakhot/2a or /Full/Berakhot/2a
+            var corpus = defaultCorpus
+            var book = ""
+            var unitPart = defaultCorpus == "Shas" ? "2a" : "1"
+
+            if pathComponents.count >= 3 && knownCorpora.contains(pathComponents[1].lowercased()) {
+                corpus = HebrewNames.canonicalMg(from: pathComponents[1])
+                book = pathComponents[2]
+                if pathComponents.count > 3 {
+                    unitPart = pathComponents[3]
+                }
+            } else {
+                book = pathComponents.count > 1 ? pathComponents[1] : ""
+                if pathComponents.count > 2 {
+                    unitPart = pathComponents[2]
+                }
+            }
+
+            let isShas = corpus.lowercased() == "shas" || host.contains("shas")
+            let (unit, subUnit) = isShas ? (unitPart, 0) : parseUnitPart(unitPart)
+
             return AlHaTorahLocation(
                 type: "mg-full",
                 mg: corpus,
@@ -252,11 +276,21 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
             }
         }
 
-        return items.map { key, val in
-            let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
-            let escapedVal = val.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? val
-            return "\(escapedKey)=\(escapedVal)"
+        return FormURLEncoder.encode(items)
+    }
+}
+
+public enum FormURLEncoder {
+    public static func encode(_ parameters: [(String, String)]) -> String {
+        parameters.map { key, value in
+            "\(percentEncode(key))=\(percentEncode(value))"
         }.joined(separator: "&")
+    }
+
+    public static func percentEncode(_ string: String) -> String {
+        var allowed = CharacterSet()
+        allowed.insert(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~")
+        return string.addingPercentEncoding(withAllowedCharacters: allowed) ?? string
     }
 }
 
@@ -381,5 +415,33 @@ public enum HebrewNames {
         }
 
         return result
+    }
+
+    public static func canonicalMg(from base: String?) -> String {
+        guard let base = base?.trimmingCharacters(in: .whitespacesAndNewlines), !base.isEmpty else {
+            return "Tanakh"
+        }
+        switch base.lowercased() {
+        case "tanakh", "torah", "bible":
+            return "Tanakh"
+        case "shas", "bavli", "talmud":
+            return "Shas"
+        case "mishna", "mishnah":
+            return "Mishna"
+        case "rambam":
+            return "Rambam"
+        case "tur":
+            return "Tur"
+        case "shulchan arukh", "shulchanarukh", "shulchan_arukh":
+            return "Shulchan Arukh"
+        case "tosefta":
+            return "Tosefta"
+        case "yerushalmi":
+            return "Yerushalmi"
+        case "library":
+            return "Library"
+        default:
+            return base.prefix(1).uppercased() + base.dropFirst()
+        }
     }
 }

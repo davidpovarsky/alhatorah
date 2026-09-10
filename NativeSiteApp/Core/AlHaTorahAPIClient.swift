@@ -55,6 +55,10 @@ public final class AlHaTorahAPIClient {
             throw AlHaTorahAPIError.badURL
         }
         let (data, _) = try await performGet(url: url)
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let err = json["err"] as? String, err.lowercased().contains("login") {
+            throw AlHaTorahAPIError.notLoggedIn
+        }
         do {
             let decoder = JSONDecoder()
             return try decoder.decode(AlHaTorahExportResponse.self, from: data)
@@ -67,9 +71,10 @@ public final class AlHaTorahAPIClient {
 
     public func fetchAnnotations(mg: String, book: String, unit: String) async throws -> [AlHaTorahRawAnnotation] {
         var components = URLComponents(string: "https://users.alhatorah.org/json/data/get")
+        let canonical = HebrewNames.canonicalMg(from: mg)
         components?.queryItems = [
             URLQueryItem(name: "type", value: "mg-all"),
-            URLQueryItem(name: "mg", value: mg),
+            URLQueryItem(name: "mg", value: canonical),
             URLQueryItem(name: "book", value: book),
             URLQueryItem(name: "unit", value: unit)
         ]
@@ -104,7 +109,9 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/bookmarks/add") else {
             throw AlHaTorahAPIError.badURL
         }
-        let body = location.formUrlEncodedString(includeOffsets: false)
+        var loc = location
+        loc.mg = HebrewNames.canonicalMg(from: loc.mg)
+        let body = loc.formUrlEncodedString(includeOffsets: false)
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
     }
@@ -113,7 +120,9 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/bookmarks/remove") else {
             throw AlHaTorahAPIError.badURL
         }
-        let body = location.formUrlEncodedString(includeOffsets: false)
+        var loc = location
+        loc.mg = HebrewNames.canonicalMg(from: loc.mg)
+        let body = loc.formUrlEncodedString(includeOffsets: false)
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
     }
@@ -124,8 +133,7 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/data/remove") else {
             throw AlHaTorahAPIError.badURL
         }
-        let escapedId = id.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? id
-        let body = "id=\(escapedId)"
+        let body = FormURLEncoder.encode([("id", id)])
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
     }
@@ -145,6 +153,7 @@ public final class AlHaTorahAPIClient {
         }
 
         var loc = location
+        loc.mg = HebrewNames.canonicalMg(from: loc.mg)
         loc.paragraph = paragraph
         loc.begin = begin
         loc.end = end
@@ -167,12 +176,7 @@ public final class AlHaTorahAPIClient {
             params.append(("paragraph", String(paragraph)))
         }
 
-        let body = params.map { k, v in
-            let ek = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? k
-            let ev = v.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? v
-            return "\(ek)=\(ev)"
-        }.joined(separator: "&")
-
+        let body = FormURLEncoder.encode(params)
         let (data, _) = try await performPost(url: url, formBody: body)
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let noteDict = json["data"] as? [String: Any],
@@ -197,9 +201,11 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/data/edit") else {
             throw AlHaTorahAPIError.badURL
         }
-        let escapedId = id.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? id
-        let escapedContent = content.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? content
-        let body = "id=\(escapedId)&dataType=gilayon&content=\(escapedContent)"
+        let body = FormURLEncoder.encode([
+            ("id", id),
+            ("dataType", "gilayon"),
+            ("content", content)
+        ])
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
     }
@@ -218,6 +224,7 @@ public final class AlHaTorahAPIClient {
         }
 
         var loc = location
+        loc.mg = HebrewNames.canonicalMg(from: loc.mg)
         loc.paragraph = paragraph
         loc.begin = begin
         loc.end = end
@@ -239,12 +246,7 @@ public final class AlHaTorahAPIClient {
             params.append(("paragraph", String(paragraph)))
         }
 
-        let body = params.map { k, v in
-            let ek = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? k
-            let ev = v.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? v
-            return "\(ek)=\(ev)"
-        }.joined(separator: "&")
-
+        let body = FormURLEncoder.encode(params)
         let (data, _) = try await performPost(url: url, formBody: body)
         if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let itemDict = json["data"] as? [String: Any],
@@ -272,7 +274,7 @@ public final class AlHaTorahAPIClient {
         begin: Int,
         end: Int
     ) async throws -> AlHaTorahHighlight {
-        _ = try? await removeData(id: oldId)
+        _ = try await removeData(id: oldId)
         return try await addHighlight(
             color: newColor,
             location: location,
@@ -288,20 +290,18 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/data/add") else {
             throw AlHaTorahAPIError.badURL
         }
+        var loc = location
+        loc.mg = HebrewNames.canonicalMg(from: loc.mg)
         let params = [
             ("dataType", "history"),
-            ("type", location.type),
-            ("mg", location.mg),
-            ("book", location.book),
-            ("unit", location.unit),
-            ("subUnit", String(location.subUnit)),
-            ("parshan", location.parshan)
+            ("type", loc.type),
+            ("mg", loc.mg),
+            ("book", loc.book),
+            ("unit", loc.unit),
+            ("subUnit", String(loc.subUnit)),
+            ("parshan", loc.parshan)
         ]
-        let body = params.map { k, v in
-            let ek = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? k
-            let ev = v.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? v
-            return "\(ek)=\(ev)"
-        }.joined(separator: "&")
+        let body = FormURLEncoder.encode(params)
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
     }
@@ -344,8 +344,9 @@ public final class AlHaTorahAPIClient {
     }
 
     private func attachSessionCookie(to request: inout URLRequest) async {
-        if let cookie = await sessionStore.fetchSessionCookie() {
-            let headers = HTTPCookie.requestHeaderFields(with: [cookie])
+        let cookies = await sessionStore.fetchSessionCookies()
+        if !cookies.isEmpty {
+            let headers = HTTPCookie.requestHeaderFields(with: cookies)
             for (field, value) in headers {
                 request.setValue(value, forHTTPHeaderField: field)
             }

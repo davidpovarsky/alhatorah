@@ -34,16 +34,27 @@ public final class AlHaTorahSessionStore: NSObject, ObservableObject, WKHTTPCook
         }
     }
 
+    public func fetchSessionCookies() async -> [HTTPCookie] {
+        await withCheckedContinuation { continuation in
+            cookieStore.getAllCookies { cookies in
+                let matching = cookies.filter { $0.domain.contains("alhatorah.org") }
+                continuation.resume(returning: matching)
+            }
+        }
+    }
+
     public func fetchSessionCookie() async -> HTTPCookie? {
         await withCheckedContinuation { continuation in
             cookieStore.getAllCookies { cookies in
-                let session = cookies.first { cookie in
-                    cookie.name == "connect.sid" &&
-                    (cookie.domain == "users.alhatorah.org" ||
-                     cookie.domain == ".alhatorah.org" ||
-                     cookie.domain.contains("alhatorah.org"))
-                }
-                continuation.resume(returning: session)
+                let sidCookies = cookies.filter { $0.name == "connect.sid" && $0.domain.contains("alhatorah.org") }
+                // Priority:
+                // 1. Exact match for users.alhatorah.org or .users.alhatorah.org
+                // 2. Exact match for .alhatorah.org
+                // 3. Any other subdomain (e.g. mg.alhatorah.org)
+                let best = sidCookies.first { $0.domain == "users.alhatorah.org" || $0.domain == ".users.alhatorah.org" }
+                    ?? sidCookies.first { $0.domain == ".alhatorah.org" || $0.domain == "alhatorah.org" }
+                    ?? sidCookies.first
+                continuation.resume(returning: best)
             }
         }
     }
@@ -53,7 +64,9 @@ public final class AlHaTorahSessionStore: NSObject, ObservableObject, WKHTTPCook
         isCheckingSession = true
         defer { isCheckingSession = false }
 
-        guard let cookie = await fetchSessionCookie() else {
+        let cookies = await fetchSessionCookies()
+        let hasSid = cookies.contains { $0.name == "connect.sid" }
+        guard hasSid else {
             isLoggedIn = false
             userEmail = nil
             lastValidatedAt = Date()
@@ -65,7 +78,7 @@ public final class AlHaTorahSessionStore: NSObject, ObservableObject, WKHTTPCook
         request.httpMethod = "GET"
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
-        let headers = HTTPCookie.requestHeaderFields(with: [cookie])
+        let headers = HTTPCookie.requestHeaderFields(with: cookies)
         for (field, value) in headers {
             request.setValue(value, forHTTPHeaderField: field)
         }

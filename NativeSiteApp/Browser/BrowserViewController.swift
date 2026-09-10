@@ -38,7 +38,12 @@ final class BrowserViewController: UIViewController {
     var onSelectionUpdate: ((ActiveTextSelection?) -> Void)?
     var onNavStateUpdate: ((Bool, Bool, Bool, String) -> Void)?
 
+    private var cachedPageLocation: AlHaTorahLocation?
+
     var currentAlHaTorahLocation: AlHaTorahLocation? {
+        if let cached = cachedPageLocation, !cached.book.isEmpty {
+            return cached
+        }
         guard let url = webView?.url else { return nil }
         return AlHaTorahLocation.from(url: url)
     }
@@ -144,6 +149,7 @@ final class BrowserViewController: UIViewController {
 
     private func configureWebView() {
         let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = WKWebsiteDataStore.default()
         configuration.allowsInlineMediaPlayback = true
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
 
@@ -155,6 +161,27 @@ final class BrowserViewController: UIViewController {
             var range = sel.getRangeAt(0);
             var text = sel.toString().trim();
             if (!text) return null;
+
+            if (typeof MG !== 'undefined' && MG.selection && MG.selection.highlight && typeof MG.selection.highlight.getRangeLocation === 'function') {
+                try {
+                    var loc = MG.selection.highlight.getRangeLocation(range);
+                    if (loc) {
+                        return {
+                            text: text,
+                            type: loc.type || (MG.mode === 'SP' ? 'mg-dual' : 'mg-full'),
+                            mg: loc.mg || MG.mainTextName || 'Tanakh',
+                            book: loc.book || (typeof MG.curBookName === 'function' ? MG.curBookName() : ''),
+                            unit: String(loc.unit || (typeof MG.curUnit === 'function' ? MG.curUnit() : '1')),
+                            subUnit: Number(loc.subUnit || 1),
+                            parshan: loc.parshan || '_mainVerse',
+                            paragraph: (loc.paragraph !== undefined && loc.paragraph !== null) ? Number(loc.paragraph) : null,
+                            begin: Number(loc.begin || 0),
+                            end: Number(loc.end || 0)
+                        };
+                    }
+                } catch(e) {}
+            }
+
             var container = range.startContainer;
             var el = container.nodeType === 1 ? container : container.parentElement;
             var pElem = el ? el.closest('.parshan-p, .pasuk, p') : null;
@@ -172,14 +199,67 @@ final class BrowserViewController: UIViewController {
                     }
                 }
             }
+
             return {
                 text: text,
-                begin: range.startOffset,
-                end: range.endOffset,
+                type: (typeof MG !== 'undefined' && MG.mode === 'SP') ? 'mg-dual' : 'mg-full',
+                mg: (typeof MG !== 'undefined' && MG.mainTextName) ? MG.mainTextName : 'Tanakh',
+                book: (typeof MG !== 'undefined' && typeof MG.curBookName === 'function') ? (MG.curBookName() || '') : '',
+                unit: (typeof MG !== 'undefined' && typeof MG.curUnit === 'function') ? String(MG.curUnit() || '1') : '1',
+                subUnit: (typeof MG !== 'undefined' && MG.state && MG.state.verse != null) ? Number(MG.state.verse) : 1,
                 parshan: parshan,
-                paragraph: paragraphIndex
+                paragraph: paragraphIndex,
+                begin: range.startOffset,
+                end: range.endOffset
             };
         };
+
+        window.__ahtGetPageLocation = function() {
+            if (typeof MG !== 'undefined') {
+                var type = (MG.mode === 'SP' ? 'mg-dual' : 'mg-full');
+                var mg = MG.mainTextName || 'Tanakh';
+                var book = '';
+                if (typeof MG.curBookName === 'function') {
+                    book = MG.curBookName() || '';
+                } else if (MG.state && MG.state.book) {
+                    book = MG.state.book;
+                }
+                var unit = '1';
+                if (typeof MG.curUnit === 'function') {
+                    unit = String(MG.curUnit() || '1');
+                } else if (MG.state && (MG.state.perek || MG.state.daf)) {
+                    unit = String(MG.state.perek || MG.state.daf || '1');
+                }
+                var subUnit = 1;
+                if (MG.state && MG.state.verse != null) {
+                    subUnit = Number(MG.state.verse);
+                }
+                var parshan = '_mainVerse';
+                if (type === 'mg-dual' && MG.state && MG.state.SP && MG.state.SP.parshan) {
+                    parshan = MG.state.SP.parshan;
+                }
+                return {
+                    type: type,
+                    mg: mg,
+                    book: String(book),
+                    unit: String(unit),
+                    subUnit: Number(subUnit),
+                    parshan: String(parshan)
+                };
+            }
+            return null;
+        };
+
+        window.__ahtReportLocation = function() {
+            var loc = window.__ahtGetPageLocation ? window.__ahtGetPageLocation() : null;
+            if (loc && loc.book && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ahtReader) {
+                window.webkit.messageHandlers.ahtReader.postMessage({
+                    type: 'location',
+                    info: loc
+                });
+            }
+        };
+
         window.__ahtApplyHighlight = function(color) {
             var sel = window.getSelection();
             if (!sel || sel.rangeCount === 0) return;
@@ -193,6 +273,7 @@ final class BrowserViewController: UIViewController {
                 document.execCommand('hiliteColor', false, color);
             }
         };
+
         document.addEventListener('selectionchange', function() {
             var info = window.__ahtGetSelection();
             if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ahtReader) {
@@ -769,6 +850,11 @@ extension BrowserViewController: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.evaluateJavaScript("window.__ahtReportLocation && window.__ahtReportLocation();", completionHandler: nil)
+        Task {
+            await AlHaTorahSessionStore.shared.validateSession()
+        }
+
         if let url = webView.url {
             historyStore.add(title: webView.title, url: url)
             let loc = currentAlHaTorahLocation
@@ -1048,6 +1134,25 @@ extension BrowserViewController: WKScriptMessageHandler {
               let dict = message.body as? [String: Any],
               let type = dict["type"] as? String else { return }
 
+        if type == "location" {
+            if let info = dict["info"] as? [String: Any],
+               let book = info["book"] as? String, !book.isEmpty {
+                let loc = AlHaTorahLocation(
+                    type: info["type"] as? String ?? "mg-full",
+                    mg: HebrewNames.canonicalMg(from: info["mg"] as? String),
+                    book: book,
+                    unit: String(describing: info["unit"] ?? "1"),
+                    subUnit: info["subUnit"] as? Int ?? 1,
+                    parshan: info["parshan"] as? String ?? "_mainVerse"
+                )
+                self.cachedPageLocation = loc
+                if let url = self.webView.url {
+                    self.onLocationUpdate?(loc, url)
+                }
+            }
+            return
+        }
+
         if type == "selection" {
             guard let info = dict["info"] as? [String: Any],
                   let text = info["text"] as? String, !text.isEmpty else {
@@ -1059,19 +1164,23 @@ extension BrowserViewController: WKScriptMessageHandler {
             let parshan = info["parshan"] as? String ?? "_mainVerse"
             let paragraph = info["paragraph"] as? Int
 
-            var loc = currentAlHaTorahLocation ?? AlHaTorahLocation(
-                book: "Shemot",
-                unit: "1",
-                subUnit: 1,
+            let locType = info["type"] as? String ?? (currentAlHaTorahLocation?.type ?? "mg-full")
+            let locMg = HebrewNames.canonicalMg(from: info["mg"] as? String ?? (currentAlHaTorahLocation?.mg ?? "Tanakh"))
+            let locBook = info["book"] as? String ?? (currentAlHaTorahLocation?.book ?? "Shemot")
+            let locUnit = String(describing: info["unit"] ?? (currentAlHaTorahLocation?.unit ?? "1"))
+            let locSubUnit = info["subUnit"] as? Int ?? (currentAlHaTorahLocation?.subUnit ?? 1)
+
+            let loc = AlHaTorahLocation(
+                type: locType,
+                mg: locMg,
+                book: locBook,
+                unit: locUnit,
+                subUnit: locSubUnit,
                 parshan: parshan,
                 paragraph: paragraph,
                 begin: begin,
                 end: end
             )
-            loc.parshan = parshan
-            loc.paragraph = paragraph
-            loc.begin = begin
-            loc.end = end
 
             let selection = ActiveTextSelection(
                 text: text,
