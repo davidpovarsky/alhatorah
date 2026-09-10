@@ -293,6 +293,7 @@ public struct AlHaTorahRawAnnotation: Codable {
             case base
             case book
             case largeUnit
+            case unit
             case subUnit
             case parshan
         }
@@ -321,6 +322,10 @@ public struct AlHaTorahRawAnnotation: Codable {
                 self.largeUnit = str
             } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .largeUnit) {
                 self.largeUnit = String(intVal)
+            } else if let str = try? container.decodeIfPresent(String.self, forKey: .unit) {
+                self.largeUnit = str
+            } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .unit) {
+                self.largeUnit = String(intVal)
             } else {
                 self.largeUnit = nil
             }
@@ -333,11 +338,21 @@ public struct AlHaTorahRawAnnotation: Codable {
                 self.subUnit = nil
             }
         }
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encodeIfPresent(base, forKey: .base)
+            try container.encodeIfPresent(book, forKey: .book)
+            try container.encodeIfPresent(largeUnit, forKey: .largeUnit)
+            try container.encodeIfPresent(subUnit, forKey: .subUnit)
+            try container.encodeIfPresent(parshan, forKey: .parshan)
+        }
     }
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
         case altId = "id"
+        case data
         case dataType
         case type
         case title
@@ -347,6 +362,20 @@ public struct AlHaTorahRawAnnotation: Codable {
         case begin
         case end
         case location
+        case loc
+    }
+
+    private enum DataCodingKeys: String, CodingKey {
+        case dataType
+        case type
+        case title
+        case content
+        case color
+        case paragraph
+        case begin
+        case end
+        case location
+        case loc
     }
 
     public init(
@@ -378,40 +407,69 @@ public struct AlHaTorahRawAnnotation: Codable {
         self.id = (try? container.decodeIfPresent(String.self, forKey: .id))
             ?? (try? container.decodeIfPresent(String.self, forKey: .altId))
             ?? UUID().uuidString
-        guard let dataType = (try? container.decodeIfPresent(String.self, forKey: .dataType)), !dataType.isEmpty else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Missing or invalid dataType"))
-        }
-        self.dataType = dataType
-        self.type = try? container.decodeIfPresent(String.self, forKey: .type)
-        self.title = try? container.decodeIfPresent(String.self, forKey: .title)
-        self.content = try? container.decodeIfPresent(String.self, forKey: .content)
-        self.color = try? container.decodeIfPresent(String.self, forKey: .color)
 
-        if let pInt = try? container.decodeIfPresent(Int.self, forKey: .paragraph) {
-            self.paragraph = pInt
-        } else if let pStr = try? container.decodeIfPresent(String.self, forKey: .paragraph), let pInt = Int(pStr) {
-            self.paragraph = pInt
+        let dataContainer = try? container.nestedContainer(keyedBy: DataCodingKeys.self, forKey: .data)
+
+        self.dataType = (try? container.decodeIfPresent(String.self, forKey: .dataType))
+            ?? (try? dataContainer?.decodeIfPresent(String.self, forKey: .dataType))
+            ?? "unknown"
+
+        self.type = (try? container.decodeIfPresent(String.self, forKey: .type))
+            ?? (try? dataContainer?.decodeIfPresent(String.self, forKey: .type))
+
+        self.title = (try? container.decodeIfPresent(String.self, forKey: .title))
+            ?? (try? dataContainer?.decodeIfPresent(String.self, forKey: .title))
+
+        self.content = (try? container.decodeIfPresent(String.self, forKey: .content))
+            ?? (try? dataContainer?.decodeIfPresent(String.self, forKey: .content))
+
+        self.color = (try? container.decodeIfPresent(String.self, forKey: .color))
+            ?? (try? dataContainer?.decodeIfPresent(String.self, forKey: .color))
+
+        if let p = try? container.decodeIfPresent(Int.self, forKey: .paragraph) {
+            self.paragraph = p
+        } else if let p = try? dataContainer?.decodeIfPresent(Int.self, forKey: .paragraph) {
+            self.paragraph = p
+        } else if let pStr = try? container.decodeIfPresent(String.self, forKey: .paragraph), let p = Int(pStr) {
+            self.paragraph = p
+        } else if let pStr = try? dataContainer?.decodeIfPresent(String.self, forKey: .paragraph), let p = Int(pStr) {
+            self.paragraph = p
         } else {
             self.paragraph = nil
         }
 
-        if let bInt = try? container.decodeIfPresent(Int.self, forKey: .begin) {
-            self.begin = bInt
-        } else if let bStr = try? container.decodeIfPresent(String.self, forKey: .begin), let bInt = Int(bStr) {
-            self.begin = bInt
+        if let b = try? container.decodeIfPresent(Int.self, forKey: .begin) {
+            self.begin = b
+        } else if let b = try? dataContainer?.decodeIfPresent(Int.self, forKey: .begin) {
+            self.begin = b
+        } else if let bStr = try? container.decodeIfPresent(String.self, forKey: .begin), let b = Int(bStr) {
+            self.begin = b
+        } else if let bStr = try? dataContainer?.decodeIfPresent(String.self, forKey: .begin), let b = Int(bStr) {
+            self.begin = b
         } else {
             self.begin = nil
         }
 
-        if let eInt = try? container.decodeIfPresent(Int.self, forKey: .end) {
-            self.end = eInt
-        } else if let eStr = try? container.decodeIfPresent(String.self, forKey: .end), let eInt = Int(eStr) {
-            self.end = eInt
+        if let e = try? container.decodeIfPresent(Int.self, forKey: .end) {
+            self.end = e
+        } else if let e = try? dataContainer?.decodeIfPresent(Int.self, forKey: .end) {
+            self.end = e
+        } else if let eStr = try? container.decodeIfPresent(String.self, forKey: .end), let e = Int(eStr) {
+            self.end = e
+        } else if let eStr = try? dataContainer?.decodeIfPresent(String.self, forKey: .end), let e = Int(eStr) {
+            self.end = e
         } else {
             self.end = nil
         }
 
-        self.location = try? container.decodeIfPresent(RawLocation.self, forKey: .location)
+        self.location = (try? container.decodeIfPresent(RawLocation.self, forKey: .location))
+            ?? (try? dataContainer?.decodeIfPresent(RawLocation.self, forKey: .location))
+            ?? (try? container.decodeIfPresent(RawLocation.self, forKey: .loc))
+            ?? (try? dataContainer?.decodeIfPresent(RawLocation.self, forKey: .loc))
+
+        if self.location == nil && self.title == nil && self.content == nil && self.color == nil && (self.dataType == "unknown" || self.dataType.isEmpty) {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Object contains no recognized annotation data"))
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -428,8 +486,9 @@ public struct AlHaTorahRawAnnotation: Codable {
         try container.encodeIfPresent(location, forKey: .location)
     }
 
-    public func toBookmark() -> AlHaTorahBookmark? {
-        guard dataType == "bookmark", let loc = location, let book = loc.book else { return nil }
+    public func toBookmark(fallbackDataType: String = "bookmark") -> AlHaTorahBookmark? {
+        let effType = (dataType == "unknown" || dataType.isEmpty) ? fallbackDataType : dataType
+        guard effType == "bookmark", let loc = location, let book = loc.book else { return nil }
         let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
@@ -442,8 +501,9 @@ public struct AlHaTorahRawAnnotation: Codable {
         return AlHaTorahBookmark(id: id, type: type ?? "mg-full", location: locationObj)
     }
 
-    public func toNote() -> AlHaTorahNote? {
-        guard dataType == "gilayon", let loc = location, let book = loc.book else { return nil }
+    public func toNote(fallbackDataType: String = "gilayon") -> AlHaTorahNote? {
+        let effType = (dataType == "unknown" || dataType.isEmpty) ? fallbackDataType : dataType
+        guard effType == "gilayon", let loc = location, let book = loc.book else { return nil }
         let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
@@ -455,7 +515,7 @@ public struct AlHaTorahRawAnnotation: Codable {
         )
         return AlHaTorahNote(
             id: id,
-            dataType: dataType,
+            dataType: effType,
             title: title ?? "",
             content: content ?? "",
             paragraph: paragraph,
@@ -466,8 +526,9 @@ public struct AlHaTorahRawAnnotation: Codable {
         )
     }
 
-    public func toHighlight() -> AlHaTorahHighlight? {
-        guard dataType == "highlight", let loc = location, let book = loc.book else { return nil }
+    public func toHighlight(fallbackDataType: String = "highlight") -> AlHaTorahHighlight? {
+        let effType = (dataType == "unknown" || dataType.isEmpty) ? fallbackDataType : dataType
+        guard effType == "highlight", let loc = location, let book = loc.book else { return nil }
         let canonical = HebrewNames.canonicalMg(from: loc.base)
         let locationObj = AlHaTorahLocation(
             type: type ?? "mg-full",
@@ -479,7 +540,7 @@ public struct AlHaTorahRawAnnotation: Codable {
         )
         return AlHaTorahHighlight(
             id: id,
-            dataType: dataType,
+            dataType: effType,
             color: color ?? "rgb(255, 252, 106)",
             paragraph: paragraph,
             begin: begin ?? 0,

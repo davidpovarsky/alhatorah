@@ -1,0 +1,8 @@
+build/
+build_logs/*.exe
+build_logs/*.lib
+build_logs/*.exp
+build_logs/*.log
+build_logs/*.ipa
+.DS_Store
+*.xcuserdata

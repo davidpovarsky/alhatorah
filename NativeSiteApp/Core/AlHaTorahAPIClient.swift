@@ -158,23 +158,28 @@ public final class AlHaTorahAPIClient {
         loc.begin = begin
         loc.end = end
 
-        var params = [
+        let formattedContent: String
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("<p") {
+            formattedContent = content
+        } else {
+            formattedContent = "<p dir=\"rtl\">\(content)</p>"
+        }
+
+        let params: [(String, String)] = [
             ("dataType", "gilayon"),
             ("title", title),
-            ("content", content),
+            ("content", formattedContent),
             ("type", loc.type),
             ("mg", loc.mg),
             ("book", loc.book),
             ("unit", loc.unit),
             ("subUnit", String(loc.subUnit)),
             ("parshan", loc.parshan),
+            ("paragraph", String(paragraph ?? 0)),
             ("begin", String(begin)),
             ("end", String(end))
         ]
-
-        if let paragraph = paragraph, paragraph > 0 {
-            params.append(("paragraph", String(paragraph)))
-        }
 
         let body = FormURLEncoder.encode(params)
         let (data, _) = try await performPost(url: url, formBody: body)
@@ -185,7 +190,7 @@ public final class AlHaTorahAPIClient {
                 id: id,
                 dataType: "gilayon",
                 title: title,
-                content: content,
+                content: formattedContent,
                 paragraph: paragraph,
                 begin: begin,
                 end: end,
@@ -201,10 +206,17 @@ public final class AlHaTorahAPIClient {
         guard let url = URL(string: "https://users.alhatorah.org/json/data/edit") else {
             throw AlHaTorahAPIError.badURL
         }
+        let formattedContent: String
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("<p") {
+            formattedContent = content
+        } else {
+            formattedContent = "<p dir=\"rtl\">\(content)</p>"
+        }
         let body = FormURLEncoder.encode([
             ("id", id),
             ("dataType", "gilayon"),
-            ("content", content)
+            ("content", formattedContent)
         ])
         let (data, _) = try await performPost(url: url, formBody: body)
         return isSuccessResponse(data)
@@ -229,7 +241,7 @@ public final class AlHaTorahAPIClient {
         loc.begin = begin
         loc.end = end
 
-        var params = [
+        let params: [(String, String)] = [
             ("dataType", "highlight"),
             ("color", color),
             ("type", loc.type),
@@ -238,13 +250,10 @@ public final class AlHaTorahAPIClient {
             ("unit", loc.unit),
             ("subUnit", String(loc.subUnit)),
             ("parshan", loc.parshan),
+            ("paragraph", String(paragraph ?? 0)),
             ("begin", String(begin)),
             ("end", String(end))
         ]
-
-        if let paragraph = paragraph, paragraph > 0 {
-            params.append(("paragraph", String(paragraph)))
-        }
 
         let body = FormURLEncoder.encode(params)
         let (data, _) = try await performPost(url: url, formBody: body)

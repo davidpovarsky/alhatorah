@@ -286,6 +286,111 @@ struct CoreTestRunner {
             assertEqual(AlHaTorahPaletteColor.purple.hex, "#bf80ff")
         }
 
-        print("ALL CORE UNIT TESTS PASSED SUCCESSFULLY! (7/7)")
+        // MARK: - Test 8: Real Server Export Schema Decoding
+        do {
+            print("  -> Testing Real Server Export Schema Decoding (nested 'data', missing dataType)")
+            let realServerExportJson = """
+            {
+              "_id": "60a1234567890abcdef12345",
+              "name": "Test User",
+              "email": "test@example.com",
+              "createdAt": "2024-01-01T00:00:00.000Z",
+              "settings": {},
+              "data": {
+                "bookmark": [
+                  {
+                    "_id": "6640b73a97c79a93561e010d",
+                    "data": {
+                      "type": "mg-full",
+                      "location": {
+                        "base": "tur-shulchan arukh",
+                        "book": "Choshen Mishpat",
+                        "largeUnit": "348",
+                        "subUnit": 6,
+                        "parshan": "_mainVerse"
+                      }
+                    },
+                    "createdAt": "2024-05-12T12:34:02.065Z",
+                    "updatedAt": "2024-05-12T12:34:02.065Z"
+                  }
+                ],
+                "gilayon": [
+                  {
+                    "_id": "65f0cfed41d263d9704c9344",
+                    "data": {
+                      "type": "mg-dual",
+                      "location": {
+                        "base": "tur",
+                        "book": "Choshen Mishpat",
+                        "largeUnit": "280",
+                        "subUnit": 6,
+                        "parshan": "_mainVerse"
+                      },
+                      "paragraph": 4,
+                      "begin": 7,
+                      "end": 7,
+                      "title": "הרי שיושב בנחלתו",
+                      "content": "<p dir=\\"rtl\\" class=\\"ql-align-right\\">מלשון זה משמע שדווקא אם כבר הוחזק היורש בירושה</p>"
+                    },
+                    "createdAt": "2024-03-12T21:58:05.380Z",
+                    "updatedAt": "2024-03-12T21:58:05.380Z"
+                  }
+                ],
+                "highlight": [
+                  {
+                    "_id": "6aa2eda7195dedd059b36de8",
+                    "data": {
+                      "type": "mg-full",
+                      "color": "rgb(255, 252, 106)",
+                      "location": {
+                        "base": "tanakh",
+                        "book": "Shemot",
+                        "largeUnit": "6",
+                        "subUnit": 1,
+                        "parshan": "_mainVerse"
+                      },
+                      "paragraph": 0,
+                      "begin": 5,
+                      "end": 15
+                    },
+                    "createdAt": "2024-06-01T00:00:00.000Z",
+                    "updatedAt": "2024-06-01T00:00:00.000Z"
+                  }
+                ]
+              }
+            }
+            """.data(using: .utf8)!
+
+            let decoder = JSONDecoder()
+            let response = try! decoder.decode(AlHaTorahExportResponse.self, from: realServerExportJson)
+            guard let payload = response.data else {
+                assertTrue(false, "Export data payload should not be nil")
+                return
+            }
+
+            let bookmarks = payload.bookmark?.compactMap { $0.toBookmark() } ?? []
+            assertEqual(bookmarks.count, 1, "Should successfully decode bookmark from real server schema")
+            assertEqual(bookmarks[0].id, "6640b73a97c79a93561e010d")
+            assertEqual(bookmarks[0].location.book, "Choshen Mishpat")
+            assertEqual(bookmarks[0].location.unit, "348")
+            assertEqual(bookmarks[0].location.subUnit, 6)
+
+            let notes = payload.gilayon?.compactMap { $0.toNote() } ?? []
+            assertEqual(notes.count, 1, "Should successfully decode note from real server schema")
+            assertEqual(notes[0].id, "65f0cfed41d263d9704c9344")
+            assertEqual(notes[0].title, "הרי שיושב בנחלתו")
+            assertEqual(notes[0].paragraph, 4)
+            assertEqual(notes[0].begin, 7)
+            assertEqual(notes[0].location.book, "Choshen Mishpat")
+
+            let highlights = payload.highlight?.compactMap { $0.toHighlight() } ?? []
+            assertEqual(highlights.count, 1, "Should successfully decode highlight from real server schema")
+            assertEqual(highlights[0].id, "6aa2eda7195dedd059b36de8")
+            assertEqual(highlights[0].color, "rgb(255, 252, 106)")
+            assertEqual(highlights[0].begin, 5)
+            assertEqual(highlights[0].end, 15)
+        }
+
+        print("ALL CORE UNIT TESTS PASSED SUCCESSFULLY! (8/8)")
     }
 }

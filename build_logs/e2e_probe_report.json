@@ -1,0 +1,120 @@
+{
+  "timestamp": "2026-09-10T23:21:12.239Z",
+  "auth": {
+    "whoisStatus": 200,
+    "hasValidEmail": true,
+    "cookieMetadata": [
+      {
+        "name": "connect.sid",
+        "domain": "users.alhatorah.org",
+        "path": "/",
+        "httpOnly": true,
+        "secure": true,
+        "hasValue": true,
+        "valueLength": 90
+      }
+    ]
+  },
+  "exportSchema": {
+    "topLevelKeys": [
+      "_id",
+      "name",
+      "email",
+      "createdAt",
+      "settings",
+      "data"
+    ],
+    "dataKeys": [
+      "gilayon",
+      "tanakhlab",
+      "bookmark",
+      "highlight"
+    ],
+    "counts": {
+      "bookmarks": 18,
+      "notes": 64,
+      "highlights": 24
+    },
+    "bookmarkSample": {
+      "keys": [
+        "_id",
+        "data",
+        "createdAt",
+        "updatedAt"
+      ],
+      "locKey": "none",
+      "locKeys": [],
+      "hasDataType": false,
+      "hasId": true,
+      "idKey": "_id",
+      "sample": {
+        "_id": "6640b73a97c79a93561e010d",
+        "data": {
+          "type": "mg-full",
+          "location": {
+            "base": "tur-shulchan arukh",
+            "book": "Choshen Mishpat",
+            "largeUnit": "348",
+            "subUnit": 6,
+            "parshan": "_mainVerse"
+          }
+        },
+        "createdAt": "2024-05-12T12:34:02.065Z",
+        "updatedAt": "2024-05-12T12:34:02.065Z"
+      }
+    },
+    "noteSample": {
+      "keys": [
+        "_id",
+        "data",
+        "createdAt",
+        "updatedAt"
+      ],
+      "locKey": "none",
+      "locKeys": [],
+      "hasDataType": false,
+      "contentKey": "data",
+      "hasId": true,
+      "idKey": "_id",
+      "sample": {
+        "_id": "65f0cfed41d263d9704c9344",
+        "data": {
+          "type": "mg-dual",
+          "location": {
+            "base": "tur",
+            "book": "Choshen Mishpat",
+            "largeUnit": "280",
+            "subUnit": 6,
+            "parshan": "_mainVerse"
+          },
+          "paragraph": 4,
+          "begin": 7,
+          "end": 7,
+          "title": "הרי שיושב בנחלתו",
+          "content": "<p dir=\"rtl\" class=\"ql-align-right\">מלשון זה משמע שדווקא אם כבר הוחזק היורש בירושה, אבל אם טרם הוחזק בזה, אזי לא נחשב לוודאי ויחלוק עם הספק.</p><p dir=\"rtl\" class=\"ql-align-right\">ותמוה מאוד מנין זה וגם שאין נראה כך מסברא</p><p dir=\"rtl\" class=\"ql-align-right\">ויש לעיין אם זה באמת כוונתו.</p>"
+        },
+        "createdAt": "2024-03-12T21:58:05.380Z",
+        "updatedAt": "2024-03-12T21:58:05.380Z"
+      }
+    },
+    "highlightSample": {
+      "keys": [
+        "_id",
+        "data",
+        "createdAt",
+        "updatedAt"
+      ],
+      "locKey": "none",
+      "locKeys": [],
+      "hasDataType": false,
+      "hasColor": false
+    }
+  },
+  "websiteNoteRequest": null,
+  "nativeNoteRequest": {
+    "status": 400,
+    "bodySent": "dataType=gilayon&title=AHT_E2E_1789082472987&content=Testing%20note%20creation%20at%202026-09-10T23%3A21%3A12.987Z&type=mg-full&mg=Tanakh&book=Devarim&unit=32&subUnit=1&parshan=_mainVerse&begin=0&end=0",
+    "response": "{\"err\":{\"_error\":{\"msg\":\"Invalid value(s)\",\"param\":\"_error\",\"nestedErrors\":[{\"value\":\"gilayon\",\"msg\":\"Invalid value\",\"param\":\"dataType\",\"location\":\"body\"},{\"value\":\"gilayon\",\"msg\":\"Invalid value\",\"param\":\"dataType\",\"location\":\"body\"},{\"value\":\"gilayon\",\"msg\":\"Invalid value\",\"param\":\"dataType\",\"location\":\"body\"},{\"value\":null,\"msg\":\"Invalid value\",\"param\":\"paragraph\",\"location\":\"body\"},{\"value\":0,\"msg\":\"Invalid value\",\"param\":\"end\",\"location\":\"body\"},{\"value\":0,\"msg\":\"Invalid value\",\"param\":\"begin\",\"location\":\"body\"},{\"value\":\"\",\"msg\":\"Invalid value\",\"param\":\"color\",\"location\":\"body\"},{\"value\":null,\"msg\":\"Invalid value\",\"param\":\"paragraph\",\"location\":\"body\"}]}}}"
+  },
+  "comparison": null
+}

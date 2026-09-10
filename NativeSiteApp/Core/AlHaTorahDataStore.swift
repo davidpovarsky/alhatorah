@@ -71,17 +71,17 @@ public final class AlHaTorahDataStore: ObservableObject {
             let export = try await apiClient.exportData()
             if let payload = export.data {
                 if let rawBookmarks = payload.bookmark {
-                    self.bookmarks = rawBookmarks.compactMap { $0.toBookmark() }
+                    self.bookmarks = rawBookmarks.compactMap { $0.toBookmark(fallbackDataType: "bookmark") }
                     saveLocal(self.bookmarks, to: bookmarksFileName)
                 }
 
                 if let rawNotes = payload.gilayon {
-                    self.notes = rawNotes.compactMap { $0.toNote() }
+                    self.notes = rawNotes.compactMap { $0.toNote(fallbackDataType: "gilayon") }
                     saveLocal(self.notes, to: notesFileName)
                 }
 
                 if let rawHighlights = payload.highlight {
-                    self.highlights = rawHighlights.compactMap { $0.toHighlight() }
+                    self.highlights = rawHighlights.compactMap { $0.toHighlight(fallbackDataType: "highlight") }
                     saveLocal(self.highlights, to: highlightsFileName)
                 }
             }
@@ -96,19 +96,35 @@ public final class AlHaTorahDataStore: ObservableObject {
 
     public func addBookmark(location: AlHaTorahLocation) async throws {
         _ = try await apiClient.addBookmark(location: location)
-        let newBookmark = AlHaTorahBookmark(
-            id: UUID().uuidString,
-            type: location.type,
-            location: location,
-            createdAt: Date()
-        )
-        bookmarks.removeAll { $0.location == location }
-        bookmarks.insert(newBookmark, at: 0)
-        saveLocal(bookmarks, to: bookmarksFileName)
+        if let export = try? await apiClient.exportData(),
+           let payload = export.data,
+           let rawBookmarks = payload.bookmark {
+            self.bookmarks = rawBookmarks.compactMap { $0.toBookmark(fallbackDataType: "bookmark") }
+            saveLocal(self.bookmarks, to: bookmarksFileName)
+        } else {
+            let newBookmark = AlHaTorahBookmark(
+                id: UUID().uuidString,
+                type: location.type,
+                location: location,
+                createdAt: Date()
+            )
+            bookmarks.removeAll { $0.location == location }
+            bookmarks.insert(newBookmark, at: 0)
+            saveLocal(bookmarks, to: bookmarksFileName)
+        }
     }
 
     public func removeBookmark(id: String) async throws {
-        _ = try await apiClient.removeData(id: id)
+        let matching = bookmarks.first { $0.id == id }
+        do {
+            _ = try await apiClient.removeData(id: id)
+        } catch {
+            if let loc = matching?.location {
+                _ = try await apiClient.removeBookmark(location: loc)
+            } else {
+                throw error
+            }
+        }
         bookmarks.removeAll { $0.id == id }
         saveLocal(bookmarks, to: bookmarksFileName)
     }
