@@ -4,5 +4,6 @@ build_logs/*.lib
 build_logs/*.exp
 build_logs/*.log
 build_logs/*.ipa
+build_logs/e2e_results/
 .DS_Store
 *.xcuserdata
