@@ -48,8 +48,7 @@ struct NativeNotesView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("notes.empty.title", "אין הערות"))
-                                .font(.title3)
-                                .fontWeight(.bold)
+                                .font(.title3.weight(.bold))
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("notes.empty.detail", "הערות אישיות (גליונות) שתוסיף יופיעו כאן.")
                                  : AppLocalization.text("notes.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את ההערות שלך."))
@@ -76,8 +75,7 @@ struct NativeNotesView: View {
                                         }
 
                                         Text(note.location.displayTitle)
-                                            .font(.caption)
-                                            .fontWeight(.bold)
+                                            .font(.caption.weight(.bold))
                                             .foregroundColor(.accentColor)
 
                                         if !note.plainContent.isEmpty {

@@ -30,8 +30,7 @@ struct NoteDetailView: View {
                         Spacer()
                         if currentNote.location.isCommentary {
                             Text(currentNote.location.parshan)
-                                .font(.caption)
-                                .fontWeight(.bold)
+                                .font(.caption.weight(.bold))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
                                 .background(Color.secondary.opacity(0.15))
@@ -53,8 +52,7 @@ struct NoteDetailView: View {
                 // Note Content
                 VStack(alignment: .leading, spacing: 10) {
                     Text(currentNote.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.title2.weight(.bold))
 
                     Divider()
 

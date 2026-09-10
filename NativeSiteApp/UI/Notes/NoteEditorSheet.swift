@@ -121,7 +121,7 @@ struct NoteEditorSheet: View {
                         Button(AppLocalization.text("common.save", "שמור")) {
                             saveNote()
                         }
-                        .fontWeight(.bold)
+                        .font(.body.weight(.bold))
                         .disabled(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }

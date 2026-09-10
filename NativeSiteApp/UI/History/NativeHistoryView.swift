@@ -48,8 +48,7 @@ struct NativeHistoryView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("history.empty.title", "אין היסטוריה"))
-                                .font(.title3)
-                                .fontWeight(.bold)
+                                .font(.title3.weight(.bold))
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("history.empty.detail", "דפים ומקורות שקראת באתר יופיעו כאן.")
                                  : AppLocalization.text("history.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את היסטוריית הקריאה שלך."))
@@ -88,8 +87,7 @@ struct NativeHistoryView: View {
 
                                             HStack(spacing: 8) {
                                                 Text(item.displayCorpus)
-                                                    .font(.caption2)
-                                                    .fontWeight(.bold)
+                                                    .font(.caption2.weight(.bold))
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)
                                                     .background(Color.secondary.opacity(0.15))

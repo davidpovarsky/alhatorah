@@ -47,8 +47,7 @@ struct NativeBookmarksView: View {
                                 .font(.system(size: 48))
                                 .foregroundColor(.secondary)
                             Text(AppLocalization.text("bookmarks.empty.title", "אין סימניות"))
-                                .font(.title3)
-                                .fontWeight(.bold)
+                                .font(.title3.weight(.bold))
                             Text(sessionStore.isLoggedIn
                                  ? AppLocalization.text("bookmarks.empty.detail", "סמן פסוקים או מקורות בקורא כדי לשמור אותם כאן.")
                                  : AppLocalization.text("bookmarks.empty.login_detail", "התחבר לחשבון על־התורה כדי לסנכרן את הסימניות שלך."))
