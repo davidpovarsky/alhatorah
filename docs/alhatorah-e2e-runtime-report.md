@@ -192,18 +192,61 @@ All operations verified against the live AlHaTorah server and booted iOS Simulat
 | 10 | **History Entry Recorded & Deleted** | `POST /json/data/add` records visit, visible on dashboard table, deleted via ID | HTTP 200; SSR table parsed; item removed | **PASS** |
 | 11 | **Cold App Relaunch Persistence** | Local store caches persist across complete app restart | All models reloaded from disk cache match memory state | **PASS** |
 
+
 ---
 
-## 5. Booted iOS Simulator App Execution
+## 6. Real-Device Regression Resolutions & Cross-Corpus Verification
 
-* **Simulator Target**: iPhone 16 (iOS 18.x / iOS 26 runtime)
-* **Execution Sequence**:
-  1. Boot simulator via `xcrun simctl bootstatus`
-  2. Build `NativeSiteApp.app` targeting `iphonesimulator` SDK
-  3. Install application bundle into booted simulator via `xcrun simctl install`
-  4. Launch `com.davidpovarsky.alhatorah` via `xcrun simctl launch`
-  5. Verify running process via `launchctl list`
-  6. Capture launch screenshot `simulator_launch.png`
-  7. Terminate application (`xcrun simctl terminate`)
-  8. Cold relaunch application (`xcrun simctl launch`)
-  9. Capture cold relaunch screenshot `simulator_relaunch.png`
+### 6.1 Saved Note & Bookmark Opening Across All Corpora
+* **Problem**: When opening a saved note or bookmark from non-Tanakh corpora (e.g. Tur, Rambam, Shas), the app previously routed to `https://mg.alhatorah.org/...`, which resulted in an AlHaTorah error: *"book does not exist"*. Note creation and server saving were functioning correctly, but navigation URL generation was incorrect.
+* **Fix**:
+  * Implemented `canonicalSubdomain(for:book:)` in `AlHaTorahLocation.swift` mapping corpora and books to their respective AlHaTorah subdomains:
+    * `Tanakh` -> `mg.alhatorah.org`
+    * `Shas` / Talmud Bavli -> `shas.alhatorah.org`
+    * `Tur` / `Shulchan Arukh` -> `tur.alhatorah.org`
+    * `Rambam` / `Mishneh Torah` -> `rambam.alhatorah.org`
+    * `Mishna` -> `mishna.alhatorah.org`
+    * `Tosefta` -> `tosefta.alhatorah.org`
+    * `Yerushalmi` -> `yerushalmi.alhatorah.org`
+  * Canonical dual commentary URLs route to `https://<subdomain>.alhatorah.org/Dual/<commentator>/<book>/<unit>`.
+  * Canonical full URLs route to `https://<subdomain>.alhatorah.org/Full/<book>/<unit>` (and `.../Full/Shas/<book>/<unit>` for Bavli).
+  * Bidirectional URL parsing supports round-trips from reader URLs to location objects without loss of corpus or commentator.
+
+### 6.2 App-Wide Top Menu Bar Persistence
+* **Problem**: On iPadOS and Mac Catalyst, switching between SwiftUI tabs caused `BrowserViewController.viewDidDisappear` to set `BrowserMenuCoordinator.activeBrowser = nil`, which rebuilt the menu without browser actions and destroyed the native top menu bar across the app.
+* **Fix**:
+  * Removed the teardown in `BrowserViewController.viewDidDisappear` so the active browser reference remains intact.
+  * Added `PersistentBrowserHolder` singleton inside `ReaderTabView.swift` to reuse the browser view controller across tab switches, preventing state, scroll, and menu lifecycle destruction.
+  * Implemented responder chain forwarding methods on `AppDelegate` (`menuGoHome`, `menuReload`, `menuShowHistory`, `menuAddBookmark`, `menuOpenURLCommand`, `menuOpenAlHaTorahIndexSearch`, `menuOpenNewTab`, `menuShowTabs`) so top menu shortcuts and items are handled regardless of the currently active SwiftUI tab.
+
+### 6.3 History Semantic HTML Parsing & Bilingual Entity Isolation
+* **Problem**: AlHaTorah history dashboard rows contain HTML entities (`&quot;`, `&amp;`, `&#39;`, `&#x200F;`) and bilingual markup containing both Hebrew and English spans (`<span class="lang-he">...</span><span class="lang-en">...</span>`). Stripping tags naively resulted in concatenated strings like `במדבר לא, אBemidbar 31:1` and unescaped entities.
+* **Fix**:
+  * Added `HTMLEntityDecoder` in `AlHaTorahDashboardParser.swift` supporting named entities, decimal entities (`&#...;`), and hex entities (`&#x...;`).
+  * Implemented `extractLocalizedText(from:preferredLang:)` to cleanly isolate the requested language span (`.lang-he` or `.lang-en`) without concatenating alternate language translations.
+
+### 6.4 Canonical Localization Resource (`ref.php` / `aht.texts.data`)
+* **Problem**: The app had a small hardcoded `bookMap` which missed many commentators, halakhic codes, and tractates.
+* **Fix**:
+  * Integrated canonical title data extracted from AlHaTorah's `ref.php` (`aht.texts.data`), providing bidirectional mappings for 3,383 canonical works and commentators.
+  * Explicitly verified target works:
+    * `Choshen Mishpat` -> `חושן משפט`
+    * `Shakh` -> `ש"ך`
+    * `Beit Yosef` -> `בית יוסף`
+    * `Darkhei Moshe` -> `דרכי משה`
+    * `Derishah` -> `דרישה`
+    * `Rashi` -> `רש"י`
+    * `R. Chananel` -> `ר' חננאל`
+    * `R. Avraham b. HaRambam` -> `ר' אברהם בן הרמב"ם`
+    * `Hoil Moshe` -> `הואיל משה`
+    * `HaKetav VeHaKabbalah` -> `הכתב והקבלה`
+
+---
+
+## 7. Verification Summary
+
+* **Local Core Unit Tests**: 11/11 PASSED (`swiftc -parse-as-library`).
+* **Authenticated E2E Suite (GitHub Actions Run 34585380362)**: 11/11 PASSED against live AlHaTorah server.
+* **Booted iOS Simulator App Execution**: App installed, launched, captured, killed, and relaunched successfully.
+* **Unsigned IPA**: `build/ipa/NativeSiteApp-unsigned-device.ipa` generated and verified.
+
