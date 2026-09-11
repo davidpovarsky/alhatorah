@@ -81,10 +81,7 @@ final class BrowserViewController: UIViewController {
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        if BrowserMenuCoordinator.activeBrowser === self {
-            BrowserMenuCoordinator.activeBrowser = nil
-            rebuildMainMenu()
-        }
+        // Do not clear activeBrowser so menus and keyboard shortcuts remain active app-wide across all tabs
     }
 
     override var canBecomeFirstResponder: Bool {
@@ -727,92 +724,94 @@ final class BrowserViewController: UIViewController {
         present(navigation, animated: true)
     }
 
-    @objc private func menuGoHome(_ command: UICommand) {
+    @objc func menuGoHome(_ command: Any?) {
         goHome()
     }
 
-    @objc private func menuCopyCurrentLink(_ command: UICommand) {
+    @objc func menuCopyCurrentLink(_ command: Any?) {
         guard let url = currentPageURL else { return }
         UIPasteboard.general.url = url
     }
 
-    @objc private func menuOpenCurrentPageInSafari(_ command: UICommand) {
+    @objc func menuOpenCurrentPageInSafari(_ command: Any?) {
         guard let url = currentPageURL else { return }
         openSystemURL(url)
     }
 
-    @objc private func menuOpenCurrentPageInSafariView(_ command: UICommand) {
+    @objc func menuOpenCurrentPageInSafariView(_ command: Any?) {
         openCurrentPageInSafariView()
     }
 
-    @objc private func menuShareCurrentPage(_ command: UICommand) {
+    @objc func menuShareCurrentPage(_ command: Any?) {
         shareCurrentPage()
     }
 
-    @objc private func menuReload(_ command: UICommand) {
+    @objc func menuReload(_ command: Any?) {
         reloadOrStop()
     }
 
-    @objc private func menuShowHistory(_ command: UICommand) {
+    @objc func menuShowHistory(_ command: Any?) {
         showHistory()
     }
 
-    @objc private func menuClearHistory(_ command: UICommand) {
+    @objc func menuClearHistory(_ command: Any?) {
         historyStore.clear()
         rebuildMainMenu()
         showMessage("ההיסטוריה נמחקה")
     }
 
-    @objc private func menuAddBookmark(_ command: UICommand) {
+    @objc func menuAddBookmark(_ command: Any?) {
         addCurrentBookmark()
     }
 
-    @objc private func menuOpenURLCommand(_ command: UICommand) {
-        if let dict = command.propertyList as? [String: String],
-           let urlString = dict["url"],
-           let url = URL(string: urlString) {
-            let source = dict["source"] ?? "unknown"
-            AppLogger.shared.log("menuOpenURLCommand source=\(source) url=\(urlString)")
-            openIncomingURL(url)
-            return
-        }
+    @objc func menuOpenURLCommand(_ command: Any?) {
+        if let cmd = command as? UICommand {
+            if let dict = cmd.propertyList as? [String: String],
+               let urlString = dict["url"],
+               let url = URL(string: urlString) {
+                let source = dict["source"] ?? "unknown"
+                AppLogger.shared.log("menuOpenURLCommand source=\(source) url=\(urlString)")
+                openIncomingURL(url)
+                return
+            }
 
-        if let urlString = command.propertyList as? String,
-           let url = URL(string: urlString) {
-            AppLogger.shared.log("menuOpenURLCommand legacy url=\(urlString)")
-            openIncomingURL(url)
+            if let urlString = cmd.propertyList as? String,
+               let url = URL(string: urlString) {
+                AppLogger.shared.log("menuOpenURLCommand legacy url=\(urlString)")
+                openIncomingURL(url)
+            }
         }
     }
 
-    @objc private func menuOpenAlHaTorahIndexSearch(_ command: UICommand) {
+    @objc func menuOpenAlHaTorahIndexSearch(_ command: Any?) {
         openAlHaTorahIndexSearch()
     }
 
-    @objc private func menuRefreshAlHaTorahIndex(_ command: UICommand) {
+    @objc func menuRefreshAlHaTorahIndex(_ command: Any?) {
         refreshAlHaTorahIndex()
     }
 
-    @objc private func menuOpenNewTab(_ command: UICommand) {
+    @objc func menuOpenNewTab(_ command: Any?) {
         openIncomingURLInNewTab(settingsStore.settings.homeURL)
     }
 
-    @objc private func menuShowTabs(_ command: UICommand) {
+    @objc func menuShowTabs(_ command: Any?) {
         showTabs()
     }
 
-    @objc private func menuCopyLogFilePath(_ command: UICommand) {
+    @objc func menuCopyLogFilePath(_ command: Any?) {
         let path = AppLogger.shared.logFileURL.path
         UIPasteboard.general.string = path
         AppLogger.shared.log("menuCopyLogFilePath path=\(path)")
         showMessage("מיקום קובץ הלוג הועתק", message: path)
     }
 
-    @objc private func menuClearDiagnosticLog(_ command: UICommand) {
+    @objc func menuClearDiagnosticLog(_ command: Any?) {
         AppLogger.shared.clear()
         showMessage("לוג האבחון נוקה")
     }
 
-    @objc private func menuNoOp(_ command: UICommand) {}
+    @objc func menuNoOp(_ command: Any?) {}
 
     @objc private func handleBottomEdgeGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
         if gesture.state == .recognized || gesture.state == .ended {

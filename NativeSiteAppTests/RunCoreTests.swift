@@ -35,7 +35,7 @@ struct CoreTestRunner {
             assertEqual(loc1?.parshan, "_mainVerse")
             assertEqual(loc1?.displayTitle, "שמות ו, א")
             assertEqual(loc1?.displayTitleEn, "Shemot 6:1")
-            assertEqual(loc1?.readerURL?.absoluteString, "https://mg.alhatorah.org/Full/Tanakh/Shemot/6.1")
+            assertEqual(loc1?.readerURL?.absoluteString, "https://mg.alhatorah.org/Full/Shemot/6.1")
 
             // 1B: Tanakh Full Mode with implicit corpus (3 segments: Full / Devarim / 32.1)
             // Real device failure: previously parsed as mg="Devarim", book="32.1"
@@ -59,7 +59,7 @@ struct CoreTestRunner {
             assertEqual(loc2?.book, "Shemot")
             assertEqual(loc2?.unit, "6")
             assertEqual(loc2?.subUnit, 1)
-            assertEqual(loc2?.displayTitle, "שמות ו, א • Rashi")
+            assertEqual(loc2?.displayTitle, "שמות ו, א • רש\"י")
             assertEqual(loc2?.readerURL?.absoluteString, "https://mg.alhatorah.org/Dual/Rashi/Shemot/6.1")
 
             // 1D: Shas Full Mode (4 segments: Full / Shas / Berakhot / 2a)
@@ -391,6 +391,120 @@ struct CoreTestRunner {
             assertEqual(highlights[0].end, 15)
         }
 
-        print("ALL CORE UNIT TESTS PASSED SUCCESSFULLY! (8/8)")
+        
+        // MARK: - Test 9: Canonical Subdomain Routing Across All Corpora
+        do {
+            print("  -> Testing Canonical Subdomain Routing Across All Corpora")
+
+            // Tur Full Mode
+            let locTur = AlHaTorahLocation(type: "mg-full", mg: "Tur", book: "Choshen Mishpat", unit: "280")
+            assertEqual(locTur.readerURL?.absoluteString, "https://tur.alhatorah.org/Full/Choshen_Mishpat/280")
+            assertEqual(locTur.displayTitle, "חושן משפט רפ")
+
+            // Tur Dual Mode with Beit Yosef
+            let locTurDual = AlHaTorahLocation(type: "mg-dual", mg: "Tur", book: "Choshen Mishpat", unit: "280", parshan: "Beit Yosef")
+            assertEqual(locTurDual.readerURL?.absoluteString, "https://tur.alhatorah.org/Dual/Beit_Yosef/Choshen_Mishpat/280")
+            assertEqual(locTurDual.displayTitle, "חושן משפט רפ • בית יוסף")
+
+            // Tur inferred from book when mg is defaulted to Tanakh
+            let locTurInferred = AlHaTorahLocation(type: "mg-full", mg: "Tanakh", book: "Choshen Mishpat", unit: "348", subUnit: 6)
+            assertEqual(locTurInferred.readerURL?.absoluteString, "https://tur.alhatorah.org/Full/Choshen_Mishpat/348.6")
+
+            // Rambam Full Mode
+            let locRambam = AlHaTorahLocation(type: "mg-full", mg: "Rambam", book: "Deiot", unit: "1")
+            assertEqual(locRambam.readerURL?.absoluteString, "https://rambam.alhatorah.org/Full/Deiot/1")
+            assertEqual(locRambam.displayTitle, "דעות א")
+
+            // Rambam inferred from book when mg is empty
+            let locRambamInferred = AlHaTorahLocation(type: "mg-full", mg: "", book: "Deiot", unit: "3", subUnit: 2)
+            assertEqual(locRambamInferred.readerURL?.absoluteString, "https://rambam.alhatorah.org/Full/Deiot/3.2")
+
+            // Shas Full Mode
+            let locShas = AlHaTorahLocation(type: "mg-full", mg: "Shas", book: "Berakhot", unit: "2a")
+            assertEqual(locShas.readerURL?.absoluteString, "https://shas.alhatorah.org/Full/Shas/Berakhot/2a")
+
+            // Tanakh Dual Mode
+            let locTanakhDual = AlHaTorahLocation(type: "mg-dual", mg: "Tanakh", book: "Shemot", unit: "6", subUnit: 1, parshan: "Rashi")
+            assertEqual(locTanakhDual.readerURL?.absoluteString, "https://mg.alhatorah.org/Dual/Rashi/Shemot/6.1")
+
+            // Bidirectional parsing from URLs
+            let parsedTur = AlHaTorahLocation.from(url: URL(string: "https://tur.alhatorah.org/Full/Choshen_Mishpat/280")!)
+            assertTrue(parsedTur != nil)
+            assertEqual(parsedTur?.mg, "Tur")
+            assertEqual(parsedTur?.book, "Choshen Mishpat")
+            assertEqual(parsedTur?.unit, "280")
+
+            let parsedTurDual = AlHaTorahLocation.from(url: URL(string: "https://tur.alhatorah.org/Dual/Beit_Yosef/Choshen_Mishpat/280")!)
+            assertTrue(parsedTurDual != nil)
+            assertEqual(parsedTurDual?.mg, "Tur")
+            assertEqual(parsedTurDual?.parshan, "Beit Yosef")
+            assertEqual(parsedTurDual?.book, "Choshen Mishpat")
+            assertEqual(parsedTurDual?.unit, "280")
+
+            let parsedRambam = AlHaTorahLocation.from(url: URL(string: "https://rambam.alhatorah.org/Full/Deiot/1")!)
+            assertTrue(parsedRambam != nil)
+            assertEqual(parsedRambam?.mg, "Rambam")
+            assertEqual(parsedRambam?.book, "Deiot")
+            assertEqual(parsedRambam?.unit, "1")
+        }
+
+        // MARK: - Test 10: HTML Entity Decoder & Bilingual History Extraction
+        do {
+            print("  -> Testing HTML Entity Decoder & Bilingual History Extraction")
+
+            // Named and numeric entities
+            let entitySample = "תנ&quot;ך &amp; ש&quot;ך &#39;עולם&#39; &#x200F;עברית&nbsp;בדיקה"
+            let decoded = HTMLEntityDecoder.decode(entitySample)
+            assertTrue(decoded.contains("תנ\"ך"))
+            assertTrue(decoded.contains("&"))
+            assertTrue(decoded.contains("ש\"ך"))
+            assertTrue(decoded.contains("'עולם'"))
+            assertTrue(decoded.contains("עברית בדיקה"))
+
+            // Bilingual row: Hebrew span must be isolated without concatenating English span
+            let bilingualRow = """
+            <div class="board-section board-history">
+              <table class="table">
+                <tbody>
+                  <tr data-id="item1" data-base="tanakh" data-date="2026-07-02T10:00:00.000Z">
+                    <td class="pr-1"><span class="lang-he">תנ&quot;ך</span><span class="lang-en">Tanakh</span></td>
+                    <td class="pr-1"><a href="https://mg.alhatorah.org/Dual/Sifre%20Bemidbar/Bemidbar/31.1"><span class="lang-he">במדבר לא, א</span><span class="lang-en">Bemidbar 31:1</span></a></td>
+                    <td class="pr-1"><span class="lang-he">ספרי במדבר</span><span class="lang-en">Sifre Bemidbar</span></td>
+                    <td><time datetime="2026-07-02T10:00:00.000Z">02/07/2026</time></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            """
+            let parsed = AlHaTorahDashboardParser.parseHistory(from: bilingualRow, preferredLang: "he")
+            assertEqual(parsed.count, 1)
+            assertEqual(parsed[0].title, "במדבר לא, א", "Title should isolate Hebrew span without concatenating English")
+            assertEqual(parsed[0].commentator, "ספרי במדבר", "Commentator should isolate Hebrew span without English")
+        }
+
+        // MARK: - Test 11: Canonical AlHaTorah Localization Resource (ref.php)
+        do {
+            print("  -> Testing Canonical AlHaTorah Localization Resource")
+
+            // Verify all 10 requested target works from ref.php:
+            assertEqual(HebrewNames.hebrewBook(for: "Choshen Mishpat"), "חושן משפט")
+            assertEqual(HebrewNames.hebrewBook(for: "Shakh"), "ש\"ך")
+            assertEqual(HebrewNames.hebrewBook(for: "Beit Yosef"), "בית יוסף")
+            assertEqual(HebrewNames.hebrewBook(for: "Darkhei Moshe"), "דרכי משה")
+            assertEqual(HebrewNames.hebrewBook(for: "Derishah"), "דרישה")
+            assertEqual(HebrewNames.hebrewBook(for: "Rashi"), "רש\"י")
+            assertEqual(HebrewNames.hebrewBook(for: "R. Chananel"), "ר' חננאל")
+            assertEqual(HebrewNames.hebrewBook(for: "R. Avraham b. HaRambam"), "ר' אברהם בן הרמב\"ם")
+            assertEqual(HebrewNames.hebrewBook(for: "Hoil Moshe"), "הואיל משה")
+            assertEqual(HebrewNames.hebrewBook(for: "HaKetav VeHaKabbalah"), "הכתב והקבלה")
+
+            // Verify reverse translations (Hebrew -> English)
+            assertEqual(HebrewNames.englishBook(for: "חושן משפט"), "Choshen Mishpat")
+            assertEqual(HebrewNames.englishBook(for: "ש\"ך"), "Shakh")
+            assertEqual(HebrewNames.englishBook(for: "בית יוסף"), "Beit Yosef")
+            assertEqual(HebrewNames.englishBook(for: "רש\"י"), "Rashi")
+        }
+
+        print("ALL CORE UNIT TESTS PASSED SUCCESSFULLY! (11/11)")
     }
 }

@@ -230,6 +230,11 @@ final class BrowserBridge: ObservableObject {
     var applyHighlightColor: ((String) -> Void)?
 }
 
+final class PersistentBrowserHolder {
+    static let shared = PersistentBrowserHolder()
+    var controller: BrowserViewController?
+}
+
 // MARK: - UIViewControllerRepresentable Wrapper
 
 struct ReaderWebViewRepresentable: UIViewControllerRepresentable {
@@ -239,14 +244,21 @@ struct ReaderWebViewRepresentable: UIViewControllerRepresentable {
     let onNavigationStateChanged: (Bool, Bool, Bool, String) -> Void
 
     func makeUIViewController(context: Context) -> BrowserViewController {
-        let settingsStore = SettingsStore()
-        let tabStore = TabStore(settings: settingsStore.settings)
-        let historyStore = HistoryStore()
-        let controller = BrowserViewController(
-            settingsStore: settingsStore,
-            tabStore: tabStore,
-            historyStore: historyStore
-        )
+        let controller: BrowserViewController
+        if let existing = PersistentBrowserHolder.shared.controller {
+            controller = existing
+        } else {
+            let settingsStore = SettingsStore()
+            let tabStore = TabStore(settings: settingsStore.settings)
+            let historyStore = HistoryStore()
+            controller = BrowserViewController(
+                settingsStore: settingsStore,
+                tabStore: tabStore,
+                historyStore: historyStore
+            )
+            PersistentBrowserHolder.shared.controller = controller
+            BrowserMenuCoordinator.activeBrowser = controller
+        }
 
         controller.onLocationUpdate = { loc, url in
             DispatchQueue.main.async {

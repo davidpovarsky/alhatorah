@@ -495,7 +495,7 @@ public struct AlHaTorahRawAnnotation: Codable {
             mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
-            subUnit: loc.subUnit ?? 1,
+            subUnit: loc.subUnit ?? 0,
             parshan: loc.parshan ?? "_mainVerse"
         )
         return AlHaTorahBookmark(id: id, type: type ?? "mg-full", location: locationObj)
@@ -510,7 +510,7 @@ public struct AlHaTorahRawAnnotation: Codable {
             mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
-            subUnit: loc.subUnit ?? 1,
+            subUnit: loc.subUnit ?? 0,
             parshan: loc.parshan ?? "_mainVerse"
         )
         return AlHaTorahNote(
@@ -535,7 +535,7 @@ public struct AlHaTorahRawAnnotation: Codable {
             mg: canonical,
             book: book,
             unit: loc.largeUnit ?? "1",
-            subUnit: loc.subUnit ?? 1,
+            subUnit: loc.subUnit ?? 0,
             parshan: loc.parshan ?? "_mainVerse"
         )
         return AlHaTorahHighlight(
