@@ -194,6 +194,9 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
 
     private static func isRambamBook(_ book: String) -> Bool {
         let clean = book.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if clean.hasPrefix("הלכות ") || clean.hasPrefix("hilkhot ") || clean.hasPrefix("hilchot ") {
+            return true
+        }
         return rambamBooksSet.contains(clean)
     }
 
@@ -256,13 +259,26 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
         let cleanBook = book.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanBook.isEmpty else { return nil }
 
-        let subdomain = Self.canonicalSubdomain(for: mg, book: cleanBook)
-        let encodedBook = cleanBook.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? cleanBook
+        let canonicalBookEn = HebrewNames.englishBook(for: cleanBook)
+        let resolvedBook = canonicalBookEn.isEmpty ? cleanBook : canonicalBookEn
+        let subdomain = Self.canonicalSubdomain(for: mg, book: resolvedBook)
+        let encodedBook = resolvedBook.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? resolvedBook
+
         let cleanUnit = unit.trimmingCharacters(in: .whitespacesAndNewlines)
         let encodedUnit = cleanUnit.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? cleanUnit
 
-        if type == "mg-dual" && isCommentary {
-            let encodedParshan = parshan.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? parshan
+        let isDualCommentary = isCommentary || type == "mg-dual"
+
+        if isDualCommentary && isCommentary {
+            let canonicalParshanEn = HebrewNames.englishBook(for: parshan)
+            let resolvedParshan = canonicalParshanEn.isEmpty ? parshan : canonicalParshanEn
+            let encodedParshan = resolvedParshan.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? resolvedParshan
+
+            if subdomain == "shas" {
+                let unitPart = subUnit > 1 ? "\(encodedUnit).\(subUnit)" : encodedUnit
+                return URL(string: "https://shas.alhatorah.org/Dual/\(encodedParshan)/\(encodedBook)/\(unitPart)")
+            }
+
             let unitPart = subUnit > 0 ? "\(encodedUnit).\(subUnit)" : encodedUnit
             return URL(string: "https://\(subdomain).alhatorah.org/Dual/\(encodedParshan)/\(encodedBook)/\(unitPart)")
         }
@@ -291,21 +307,31 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
         else if host.contains("rif") { defaultCorpus = "Rif" }
         else if host.contains("mg") { defaultCorpus = "Tanakh" }
 
-        let mode = pathComponents[0].lowercased() // "full" or "dual"
+        let mode = pathComponents[0].lowercased() // "full" or "dual" or "parshan" or "sp"
 
-        let knownCorpora: Set<String> = [
-            "tanakh", "shas", "mishna", "mishnah", "rambam", "tur",
-            "shulchan arukh", "shulchanarukh", "tosefta", "yerushalmi", "library"
-        ]
+        let isCorpusComponent: (String) -> Bool = { comp in
+            let c = comp.lowercased()
+                .replacingOccurrences(of: "_", with: " ")
+                .replacingOccurrences(of: "-", with: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return [
+                "tanakh", "torah", "mikraot gedolot",
+                "shas", "bavli", "talmud", "talmud bavli",
+                "mishna", "mishnah",
+                "rambam", "mishneh torah", "mishnehtorah",
+                "tur", "tur shulchan arukh", "tur shulchanarukh", "shulchan arukh", "shulchanarukh", "shulchan_arukh",
+                "tosefta", "yerushalmi", "rif", "library"
+            ].contains(c)
+        }
 
-        if mode == "dual" {
-            // E.g. /Dual/Rashi/Shemot/6.1 or /Dual/Tanakh/Rashi/Shemot/6.1 or /Dual/Beit_Yosef/Choshen_Mishpat/280
+        if mode == "dual" || mode == "parshan" || mode == "sp" {
+            // E.g. /Dual/Rashi/Shemot/6.1 or /Dual/Tanakh/Rashi/Shemot/6.1 or /Dual/Tur-Shulchan_Arukh/Beit_Yosef/Choshen_Mishpat/280
             var corpus = defaultCorpus
             var parshan = "_mainVerse"
             var book = ""
             var unitPart = "1"
 
-            if pathComponents.count >= 4 && knownCorpora.contains(pathComponents[1].lowercased().replacingOccurrences(of: "_", with: " ")) {
+            if pathComponents.count >= 4 && isCorpusComponent(pathComponents[1]) {
                 corpus = HebrewNames.canonicalMg(from: pathComponents[1])
                 parshan = pathComponents[2].replacingOccurrences(of: "_", with: " ")
                 book = pathComponents[3].replacingOccurrences(of: "_", with: " ")
@@ -332,12 +358,12 @@ public struct AlHaTorahLocation: Codable, Equatable, Hashable {
         }
 
         if mode == "full" {
-            // E.g. /Full/Devarim/32.1 or /Full/Tanakh/Devarim/32.1 or /Full/Choshen_Mishpat/280 or /Full/Berakhot/2a
+            // E.g. /Full/Devarim/32.1 or /Full/Tanakh/Devarim/32.1 or /Full/Tur-Shulchan_Arukh/Choshen_Mishpat/280 or /Full/Berakhot/2a
             var corpus = defaultCorpus
             var book = ""
             var unitPart = defaultCorpus == "Shas" ? "2a" : "1"
 
-            if pathComponents.count >= 3 && knownCorpora.contains(pathComponents[1].lowercased().replacingOccurrences(of: "_", with: " ")) {
+            if pathComponents.count >= 3 && isCorpusComponent(pathComponents[1]) {
                 corpus = HebrewNames.canonicalMg(from: pathComponents[1])
                 book = pathComponents[2].replacingOccurrences(of: "_", with: " ")
                 if pathComponents.count > 3 {
@@ -3865,8 +3891,206 @@ Collected from Vilna Gaon (GR\"A)	ליקוט מהגאון מוילנא (הגר\"
 }
 
 public enum HebrewNames {
+    private static let commonHebrewToEnglish: [String: String] = [
+        // Tanakh commentators
+        "רש\"י": "Rashi",
+        "רשי": "Rashi",
+        "רמב\"ן": "Ramban",
+        "רמבן": "Ramban",
+        "אבן עזרא": "Ibn Ezra",
+        "ראב\"ע": "Ibn Ezra",
+        "רשב\"ם": "Rashbam",
+        "רשבם": "Rashbam",
+        "רד\"ק": "Radak",
+        "רדק": "Radak",
+        "ספורנו": "Sforno",
+        "רלב\"ג": "Ralbag",
+        "רלבג": "Ralbag",
+        "חזקוני": "Chizkuni",
+        "דעת זקנים": "Daat Zekenim",
+        "בעל הטורים": "Baal HaTurim",
+        "אור החיים": "Or HaChayim",
+        "אוה\"ח": "Or HaChayim",
+        "כלי יקר": "Kli Yakar",
+        "מלבי\"ם": "Malbim",
+        "מלבים": "Malbim",
+        "תורה תמימה": "Torah Temimah",
+        "שפתי חכמים": "Siftei Chakhamim",
+        "עיקר שפתי חכמים": "Ikar Siftei Chakhamim",
+        "גור אריה": "Gur Aryeh",
+        "העמק דבר": "Haamek Davar",
+        "משך חכמה": "Meshekh Chokhmah",
+        "תרגום אונקלוס": "Targum Onkelos",
+        "אונקלוס": "Targum Onkelos",
+        "תרגום יונתן": "Targum Yonatan",
+        "יונתן": "Targum Yonatan",
+        "תרגום ירושלמי": "Targum Yerushalmi",
+
+        // Shas commentators
+        "תוספות": "Tosafot",
+        "תוס'": "Tosafot",
+        "רשב\"א": "Rashba",
+        "רשבא": "Rashba",
+        "ריטב\"א": "Ritva",
+        "ריטבא": "Ritva",
+        "ר\"ן": "Ran",
+        "רן": "Ran",
+        "מהרש\"א": "Maharsha",
+        "מהרשא": "Maharsha",
+        "מהר\"ם": "Maharam",
+        "מהרם": "Maharam",
+        "מאירי": "Meiri",
+        "פני יהושע": "Pnei Yehoshua",
+        "רא\"ש": "Rosh",
+        "ראש": "Rosh",
+        "רי\"ף": "Rif",
+        "ריף": "Rif",
+        "שיטה מקובצת": "Shita Mekubetzet",
+        "שטמ\"ק": "Shita Mekubetzet",
+        "בן יהוידע": "Ben Yehoyada",
+        "רבנו חננאל": "R. Chananel",
+        "ר' חננאל": "R. Chananel",
+        "ר\"ח": "R. Chananel",
+
+        // Tur & Shulchan Arukh
+        "בית יוסף": "Beit Yosef",
+        "ב\"י": "Beit Yosef",
+        "דרכי משה": "Darkhei Moshe",
+        "ד\"מ": "Darkhei Moshe",
+        "דרישה": "Derishah",
+        "פרישה": "Perishah",
+        "דרישה ופרישה": "Derishah UPerishah",
+        "ב\"ח": "Bach",
+        "בח": "Bach",
+        "ש\"ך": "Shakh",
+        "שך": "Shakh",
+        "ט\"ז": "Taz",
+        "טז": "Taz",
+        "סמ\"ע": "Sma",
+        "סמע": "Sma",
+        "מגן אברהם": "Magen Avraham",
+        "מג\"א": "Magen Avraham",
+        "משנה ברורה": "Mishnah Berurah",
+        "מ\"ב": "Mishnah Berurah",
+        "מ\"ב וביה\"ל": "Mishnah Berurah",
+        "באר היטב": "Beer Heitev",
+        "שער הציון": "Shaar Hatziyun",
+        "ביאור הלכה": "Biur Halakhah",
+        "פתחי תשובה": "Pitchei Teshuvah",
+        "קצות החושן": "Ketzot HaChoshen",
+        "קצוה\"ח": "Ketzot HaChoshen",
+        "נתיבות המשפט": "Netivot HaMishpat",
+        "נתיבות": "Netivot HaMishpat",
+        "ביאור הגר\"א": "Beur HaGra",
+        "הגר\"א": "Vilna Gaon (GR\"A)",
+        "חושן משפט": "Choshen Mishpat",
+        "אורח חיים": "Orach Chayim",
+        "יורה דעה": "Yoreh Deah",
+        "אבן העזר": "Even HaEzer",
+
+        // Rambam
+        "כסף משנה": "Kesef Mishneh",
+        "כס\"מ": "Kesef Mishneh",
+        "מגיד משנה": "Maggid Mishneh",
+        "מ\"מ": "Maggid Mishneh",
+        "לחם משנה": "Lechem Mishneh",
+        "משנה למלך": "Mishneh LaMelekh",
+        "מל\"מ": "Mishneh LaMelekh",
+        "רדב\"ז": "Radbaz",
+        "ראב\"ד": "Raavad",
+        "ראבד": "Raavad",
+        "מגדל עוז": "Migdal Oz",
+        "הגהות מיימוניות": "Haggahot Maimoniyot",
+        "דעות": "Deiot",
+        "משנה תורה": "Mishneh Torah",
+        "רמב\"ם": "Rambam",
+
+        // Mishna
+        "ברטנורא": "Bartenura",
+        "רע\"ב": "Bartenura",
+        "ר' עובדיה מברטנורא": "Bartenura",
+        "תוספות יום טוב": "Tosafot Yom Tov",
+        "תוס' יו\"ט": "Tosafot Yom Tov",
+        "תפארת ישראל": "Tiferet Yisrael"
+    ]
+
+    private static let explicitEnglishToHebrew: [String: String] = [
+        "Rashi": "רש\"י",
+        "Ramban": "רמב\"ן",
+        "Ibn Ezra": "אבן עזרא",
+        "Rashbam": "רשב\"ם",
+        "Radak": "רד\"ק",
+        "Sforno": "ספורנו",
+        "Ralbag": "רלב\"ג",
+        "Chizkuni": "חזקוני",
+        "Daat Zekenim": "דעת זקנים",
+        "Baal HaTurim": "בעל הטורים",
+        "Or HaChayim": "אור החיים",
+        "Kli Yakar": "כלי יקר",
+        "Malbim": "מלבי\"ם",
+        "Torah Temimah": "תורה תמימה",
+        "Siftei Chakhamim": "שפתי חכמים",
+        "Gur Aryeh": "גור אריה",
+        "Haamek Davar": "העמק דבר",
+        "Meshekh Chokhmah": "משך חכמה",
+        "Targum Onkelos": "תרגום אונקלוס",
+        "Targum Yonatan": "תרגום יונתן",
+        "Targum Yerushalmi": "תרגום ירושלמי",
+        "Tosafot": "תוספות",
+        "Rashba": "רשב\"א",
+        "Ritva": "ריטב\"א",
+        "Ran": "ר\"ן",
+        "Maharsha": "מהרש\"א",
+        "Maharam": "מהר\"ם",
+        "Meiri": "מאירי",
+        "Pnei Yehoshua": "פני יהושע",
+        "Rosh": "רא\"ש",
+        "Rif": "רי\"ף",
+        "Shita Mekubetzet": "שיטה מקובצת",
+        "Ben Yehoyada": "בן יהוידע",
+        "R. Chananel": "ר' חננאל",
+        "Beit Yosef": "בית יוסף",
+        "Darkhei Moshe": "דרכי משה",
+        "Derishah": "דרישה",
+        "Perishah": "פרישה",
+        "Derishah UPerishah": "דרישה ופרישה",
+        "Bach": "ב\"ח",
+        "Shakh": "ש\"ך",
+        "Taz": "ט\"ז",
+        "Sma": "סמ\"ע",
+        "Magen Avraham": "מגן אברהם",
+        "Mishnah Berurah": "משנה ברורה",
+        "Beer Heitev": "באר היטב",
+        "Shaar Hatziyun": "שער הציון",
+        "Biur Halakhah": "ביאור הלכה",
+        "Pitchei Teshuvah": "פתחי תשובה",
+        "Ketzot HaChoshen": "קצות החושן",
+        "Netivot HaMishpat": "נתיבות המשפט",
+        "Beur HaGra": "ביאור הגר\"א",
+        "Kesef Mishneh": "כסף משנה",
+        "Maggid Mishneh": "מגיד משנה",
+        "Lechem Mishneh": "לחם משנה",
+        "Mishneh LaMelekh": "משנה למלך",
+        "Radbaz": "רדב\"ז",
+        "Raavad": "ראב\"ד",
+        "Migdal Oz": "מגדל עוז",
+        "Haggahot Maimoniyot": "הגהות מיימוניות",
+        "Bartenura": "ברטנורא",
+        "Tosafot Yom Tov": "תוספות יום טוב",
+        "Tiferet Yisrael": "תפארת ישראל",
+        "Choshen Mishpat": "חושן משפט",
+        "Orach Chayim": "אורח חיים",
+        "Orach Chayyim": "אורח חיים",
+        "Yoreh Deah": "יורה דעה",
+        "Even HaEzer": "אבן העזר",
+        "Deiot": "דעות"
+    ]
+
     public static func hebrewBook(for name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let direct = explicitEnglishToHebrew[trimmed] {
+            return direct
+        }
         if let canonical = AlHaTorahCanonicalTitles.hebrew(for: trimmed) {
             return canonical
         }
@@ -3875,8 +4099,21 @@ public enum HebrewNames {
 
     public static func englishBook(for name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let direct = commonHebrewToEnglish[trimmed] {
+            return direct
+        }
         if let canonical = AlHaTorahCanonicalTitles.english(for: trimmed) {
             return canonical
+        }
+        // Try stripping 'הלכות ' prefix
+        if trimmed.hasPrefix("הלכות ") {
+            let stripped = String(trimmed.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let direct = commonHebrewToEnglish[stripped] {
+                return direct
+            }
+            if let canonical = AlHaTorahCanonicalTitles.english(for: stripped) {
+                return canonical
+            }
         }
         return trimmed
     }
@@ -3947,16 +4184,21 @@ public enum HebrewNames {
         guard let base = base?.trimmingCharacters(in: .whitespacesAndNewlines), !base.isEmpty else {
             return "Tanakh"
         }
-        switch base.lowercased() {
-        case "tanakh", "torah", "bible":
+        let clean = base.lowercased()
+            .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "-", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch clean {
+        case "tanakh", "torah", "bible", "mikraot gedolot":
             return "Tanakh"
-        case "shas", "bavli", "talmud":
+        case "shas", "bavli", "talmud", "talmud bavli":
             return "Shas"
         case "mishna", "mishnah":
             return "Mishna"
-        case "rambam":
+        case "rambam", "mishneh torah", "mishnehtorah":
             return "Rambam"
-        case "tur":
+        case "tur", "tur shulchan arukh", "tur shulchanarukh":
             return "Tur"
         case "shulchan arukh", "shulchanarukh", "shulchan_arukh":
             return "Shulchan Arukh"
@@ -3964,6 +4206,8 @@ public enum HebrewNames {
             return "Tosefta"
         case "yerushalmi":
             return "Yerushalmi"
+        case "rif":
+            return "Rif"
         case "library":
             return "Library"
         default:

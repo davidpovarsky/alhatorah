@@ -67,7 +67,7 @@ struct BookIndexBuilder {
 
         func addBookFromData(id: String, sourceData: [String: Any]) {
             guard !id.isEmpty, !seen.contains(id) else { return }
-            if bool(sourceData["baseOnly"]) == true || bool(sourceData["branch"]) == false { return }
+            if bool(sourceData["baseOnly"]) == true { return }
 
             let titleStarts = dictionary(sourceData["titleStarts"])
             let titleHe = cleanTitle(string(sourceData["he"]) ?? string(titleStarts["he"]))
@@ -75,14 +75,20 @@ struct BookIndexBuilder {
             guard !titleHe.isEmpty, !titleEn.isEmpty else { return }
 
             let sectionNames = safeArray(sourceData["sectionNames"])
-            guard !sectionNames.isEmpty else { return }
-            guard engine.expandedSectionCount(for: id) > 0 else { return }
-
             let categories = array(sourceData["categories"]).map { cleanTitle(string($0)) }.filter { !$0.isEmpty }
-            let categoryTitles = compactPath([
+            var categoryTitles = compactPath([
                 cleanTitle(string(sourceData["branch"])),
                 cleanTitle(string(sourceData["subbranch"]))
             ] + categories)
+
+            let isCommentary = bool(sourceData["isParshan"]) == true ||
+                string(sourceData["type"]) == "parshan" ||
+                categoryTitles.contains { $0.contains("מפרש") || $0.contains("Commentar") } ||
+                HebrewNames.hebrewBook(for: id) != id
+
+            if isCommentary && !categoryTitles.contains(where: { $0.contains("מפרש") }) {
+                categoryTitles.insert("מפרשים", at: 0)
+            }
 
             let original = dictionary(sourceData["original"])
             let originalAliases = [string(original["he"]), string(original["en"])].compactMap { $0 }

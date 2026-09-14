@@ -30,11 +30,9 @@ struct NativeSearchView: View {
 
     private var filteredResults: [BookIndexItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else {
-            return Array(allItems.prefix(40))
-        }
+        let sourceList = allItems.isEmpty ? AlHaTorahCanonicalTitles.buildBaseIndexItems() : allItems
 
-        return Array(allItems.lazy.filter { item in
+        let filtered = sourceList.lazy.filter { item in
             let matchesFilter: Bool
             switch selectedFilter {
             case .all:
@@ -48,11 +46,15 @@ struct NativeSearchView: View {
             }
             guard matchesFilter else { return false }
 
+            if query.isEmpty { return true }
+
             let searchable = ([item.id, item.titleHe, item.titleEn, item.searchableText] + item.aliases + item.categoryTitles + item.sectionNames)
                 .joined(separator: " ")
                 .lowercased()
             return searchable.contains(query)
-        }.prefix(60))
+        }
+
+        return Array(filtered.prefix(150))
     }
 
     var body: some View {
@@ -156,15 +158,18 @@ struct NativeSearchView: View {
     }
 
     private func loadIndexIfNeeded() {
-        guard allItems.isEmpty else { return }
-        if let bundle = RefPHPStore.shared.readCachedBundle() {
+        if allItems.isEmpty {
+            self.allItems = AlHaTorahCanonicalTitles.buildBaseIndexItems()
+        }
+
+        if let bundle = RefPHPStore.shared.readCachedBundle(), !bundle.booksIndex.isEmpty {
             self.allItems = bundle.booksIndex
         } else {
             isLoadingIndex = true
             SpotlightIndexManager.shared.refreshIfNeeded(force: false) { result in
                 DispatchQueue.main.async {
                     self.isLoadingIndex = false
-                    if case .success = result, let bundle = RefPHPStore.shared.readCachedBundle() {
+                    if case .success = result, let bundle = RefPHPStore.shared.readCachedBundle(), !bundle.booksIndex.isEmpty {
                         self.allItems = bundle.booksIndex
                     }
                 }
@@ -178,6 +183,8 @@ struct NativeSearchView: View {
             DispatchQueue.main.async {
                 if let url {
                     coordinator.openInReader(url: url)
+                } else if let loc = AlHaTorahLocation(type: "mg-full", mg: "Tanakh", book: item.id, unit: "1", subUnit: 1).readerURL {
+                    coordinator.openInReader(url: loc)
                 } else if let fallbackURL = URL(string: "https://mg.alhatorah.org/Full/Tanakh/\(item.id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? item.id)/1.1") {
                     coordinator.openInReader(url: fallbackURL)
                 }
